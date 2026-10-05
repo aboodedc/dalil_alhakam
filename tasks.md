@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 19 |
+| ✅ DONE | 20 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -119,6 +119,20 @@
 _No tasks yet._
 
 ### 🔧 Refactoring / Improvement
+
+- [x] ✅ **TASK-021**: Ask-page cost display + DB-sourced guarantee + hackathon README
+  - **Priority**: High
+  - **Category**: Refactoring
+  - **SRS Ref**: FR-003, FR-004
+  - **Created**: 2026-10-05
+  - **Completed**: 2026-10-05
+  - **Notes**:
+    - `lib/ai/costs.ts` (new): per-stage USD estimates (embed/rewrite/rerank/answer), published prices (CF bge-m3 $0.0118/1M tok, Cohere $0.002/call, `:free` = $0), `COST_*` env overrides, `estimateTokens` (chars/3), `formatUsd`
+    - `lib/ai/pipeline.ts`: `cost: CostReport` in output (`rerankerUsed` tracked; `safeModelNames()` never throws); DB-guarantee comment at step 5a — hadith cards are verbatim DB rows, LLM never writes hadith text
+    - Ask page: `ChatTurn.latencyMs/cost` → `CostMeta` line ("الوقت: 1.4s · التكلفة التقديرية: $0.0020 (تضمين · ترتيب …)") + Database-icon note "نصوص الأحاديث من قاعدة البيانات مباشرة"; i18n keys ar/en
+    - `README.md` fully rewritten (pipeline diagram, cost table ~$0.002/request, quick start, 3 required keys, scripts, API, deploy, layout, limitations) + hackathon-alignment section (track 01 + 04 criteria table); `.env.example` fully commented (3 keys, tuning, cost overrides, alternatives)
+    - `docs/PRESENTATION.md` (new): slide-by-slide content for the ATIC pptx template (delete guide slides 1-7, fill from slide 8, Readex Pro, brand colors, suggested order المشكلة→الحل→آلية→النموذج→الأثر→الفريق) — decoded from `hackthons_files/`
+    - Verified: `tsc` + `lint` + `next build` green; cost unit test (rewrite free · embed $0.0000 · rerank $0.0020 · total $0.0020)
 
 - [x] ✅ **TASK-020**: Cloudflare Workers AI bge-m3 embeddings + OpenRouter reranker hardening
   - **Priority**: High

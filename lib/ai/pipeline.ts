@@ -21,7 +21,8 @@ import { vectorSearch } from "@/lib/ai/retrieval";
 import { chatCompletion } from "@/lib/ai/llm";
 import type { ChatMessage } from "@/lib/ai/llm";
 import { rewriteQuery } from "@/lib/ai/query-rewrite";
-import { isRerankerConfigured } from "@/lib/ai/providers";
+import { getEmbeddingConfig, getLlmConfig, getRerankerConfig, isRerankerConfigured } from "@/lib/ai/providers";
+import { computeAskCost, type CostReport } from "@/lib/ai/costs";
 import type { HadithResult } from "@/types";
 
 function intEnv(name: string, fallback: number, min: number, max: number): number {
@@ -96,6 +97,11 @@ export type AskPipelineOutput = {
   /** Candidates dropped by the cutoff */
   droppedCount: number;
   latencyMs: number;
+  /**
+   * Per-request USD cost estimate (embed / rewrite / rerank / answer lines).
+   * Estimates from character counts — see lib/ai/costs.ts.
+   */
+  cost: CostReport;
 };
 
 export type AskPipelineOptions = {
@@ -178,6 +184,31 @@ function buildMessages(question: string, hadiths: PipelineHadith[]): ChatMessage
 
 // ── The pipeline ──────────────────────────────────────────────
 
+/** Model names for cost reporting — never throws (missing keys are fine). */
+function safeModelNames(): {
+  embedModel: string;
+  rerankerModel: string;
+  rewriteModel: string;
+  llmModel: string;
+} {
+  try {
+    const llm = getLlmConfig();
+    return {
+      embedModel: getEmbeddingConfig().model,
+      rerankerModel: getRerankerConfig().model,
+      rewriteModel: llm.rewriteModel,
+      llmModel: llm.model,
+    };
+  } catch {
+    return {
+      embedModel: process.env.EMBEDDING_MODEL ?? "baai/bge-m3",
+      rerankerModel: process.env.RERANKER_MODEL ?? "",
+      rewriteModel: process.env.LLM_REWRITE_MODEL ?? "",
+      llmModel: process.env.LLM_MODEL ?? "",
+    };
+  }
+}
+
 export async function answerQuestion(
   question: string,
   opts: AskPipelineOptions = {},
@@ -206,6 +237,10 @@ export async function answerQuestion(
   }
 
   // Step 5a — direct fetch of full rows from PostgreSQL.
+  // GUARANTEE: every hadith shown to the user comes from THIS query — the
+  // hadith text/sanad/hukm in the UI is verbatim database content. The LLM
+  // (step 6) only writes the summary answer and is forbidden from inventing
+  // hadiths; the reranker (step 4) only reorders these same DB rows.
   const hadithRows = await prisma.hadith.findMany({
     where: { id: { in: candidates.map((c) => c.id) } },
     include: { book: true, alternatives: true },
@@ -221,6 +256,7 @@ export async function answerQuestion(
   // Step 4 — reranker vs the ORIGINAL question → top `finalK`.
   // Without a reranker key (local-only MVP) → cosine order, never blocked.
   // (on reranker failure, also fall back to the cosine order)
+  let rerankerUsed = false;
   let ranked: { row: HadithRow; cosineScore: number; rerankScore: number | null }[];
   if (!isRerankerConfigured()) {
     console.info(
@@ -232,6 +268,7 @@ export async function answerQuestion(
     try {
       const rerankInput = pool.map(({ row }) => row.text);
       const reranked = await rerank(q, rerankInput, finalK);
+      rerankerUsed = true;
       ranked = reranked.map(({ index, relevanceScore }) => ({
         row: pool[index].row,
         cosineScore: pool[index].cosineScore,
@@ -270,6 +307,17 @@ export async function answerQuestion(
 
   const latencyMs = Date.now() - startedAt;
 
+  // Per-request USD cost estimate (embed / rewrite / rerank / answer lines).
+  const cost = computeAskCost({
+    question: q,
+    embeddedQuery: rewritten,
+    rewriteUsed: used,
+    contextDocs: finalHadiths.map((h) => h.text),
+    answer,
+    rerankerUsed,
+    ...safeModelNames(),
+  });
+
   // Persist run + per-stage scores
   let queryId = "";
   if (opts.persist ?? true) {
@@ -303,5 +351,6 @@ export async function answerQuestion(
     hadiths: finalHadiths,
     droppedCount,
     latencyMs,
+    cost,
   };
 }

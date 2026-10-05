@@ -29,6 +29,8 @@
 - `Hadith.embedding` is `Unsupported("vector(1024)")` — never read/written via client, only raw SQL (`<=>` cosine operator)
 
 ### RAG pipeline (2026-10-05 decision — ALL-REMOTE OpenRouter, Vercel-ready)
+- **Cost display (2026-10-05)**: `lib/ai/costs.ts` — per-request USD estimate per stage (embed/rewrite/rerank/answer) returned by `/api/ask` as `cost` and shown on the ask page under every answer (`CostMeta` in `chat-message.tsx`, i18n `ask.chat.meta.cost.*` + `ask.chat.db.note`); current stack ≈ **$0.002/request** (Cohere rerank is the only real cost); `COST_*` env overrides; estimates from chars/3 — labeled "تقديرية"
+- **DB-sourced guarantee (2026-10-05, user requirement)**: hadith text/sanad/hukm in the UI are ALWAYS verbatim DB rows (`pipeline.ts` step 5a fetches rows; reranker only reorders; LLM only writes the summary) — explicit comment + UI note (Database icon) + README claim
 - Step 1: user question → Step 2: **light LLM query rewriter, ALWAYS runs** (`lib/ai/query-rewrite.ts`, graceful fallback to original)
 - Step 3: **BGE-M3** → pgvector cosine → top **30** (`RAG_RECALL_K`, embedded input = rewritten query)
 - Step 4: **reranker** vs the **ORIGINAL** question → top **10** (`RAG_FINAL_K`) — **optional**: without a key the pipeline skips to cosine order (info log, never blocks)
@@ -45,7 +47,7 @@
 - Setup + Vercel deploy guide: `docs/DATABASE.md`
 
 ### Backend API — MVP (2026-10-04)
-- `POST /api/ask` `{question, bookId (id|slug), userId?}` → `{queryId, rewrittenQuery, answer, hadiths[10], droppedCount, latencyMs}`
+- `POST /api/ask` `{question, bookId (id|slug), userId?}` → `{queryId, rewrittenQuery, answer, hadiths[10], droppedCount, latencyMs, cost}` — `cost` = per-stage USD estimate (`lib/ai/costs.ts`, TASK-021)
 - `GET /api/books` (DB, mock fallback) · `GET /api/health` (DB + providers + corpus)
 - `POST /api/ratings` · `POST /api/reports` · `GET /api/history` · `GET/POST /api/folders` · `PATCH /api/manager/books` (books-only scope)
 - Ask/manager/workspace/report pages wired to these endpoints with offline/mock fallbacks
@@ -165,6 +167,13 @@
 ---
 
 ## 🧩 Project-Specific Rules
+
+### Hackathon requirements (2026-10-05 — from `hackthons_files/`, decoded from visual-order PDFs)
+- **Challenge**: تحدي الذكاء الاصطناعي في خدمة المحتوى الإسلامي (ATIC). Sources read via file-converter (PDFs are visual-order Arabic; `read` cannot open PDFs with this model).
+- **Tracks**: 01 الحوار المعرفي وإجابات موثوقة (our primary) · 02 صناع المحتوى + تعدد اللغات · 03 التجارب التفاعلية/التعريف بالإسلام · 04 أدوات المعرفة والتحقق للمتخصصين (our secondary: source-tracing + anti-hallucination) · 05 المسار المفتوح (cumulative, ≥2 tracks).
+- **Criteria enforced**: every claim traceable to source · distinguish authentic sunnah · NO personal fatwas/ijtihad on disputed matters (levels أ/ب only, never د) · trusted sources list includes **shamela.ws** (our corpus!) and **dorar.net** · transparency: declare when AI is used · specialization: no religious/legal conclusions · no personal data · cultural sensitivity.
+- **Our compliance mapping**: README section «تحدي الذكاء الاصطناعي … التماهي مع المتطلبات» (table maps each criterion to implementation); existing i18n `ask.disclaimer` already says the system retrieves only.
+- **Presentation template** (`قالب العرض*.pptx`): slides 1–7 are a guide — DELETE before sending; fillable layouts start slide 8; font Readex Pro (45/24/18pt); colors كحلي #12183F · بنفسجي #6150EA · تركواز #2EF2C2 · أبيض مائل #F2F4FF; 16:9 1920×1080; RTL right-aligned; suggested order: المشكلة → الحل → آلية العمل → النموذج → الأثر → الفريق; replace default chart numbers (20/35/50/65, 40/30/20/10 — examples only). Ready-to-paste slide content: `docs/PRESENTATION.md`.
 
 ### Skill System
 - **Date**: 2026-10-01

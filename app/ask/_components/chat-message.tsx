@@ -1,9 +1,11 @@
 "use client";
 
-import { AlertCircle, BookOpenText } from "lucide-react";
+import { AlertCircle, BookOpenText, Database } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
+import type { CostReport } from "@/lib/ai/costs";
+import { formatUsd } from "@/lib/ai/costs";
 import { Button } from "@/components/ui/button";
 import { ResultCard } from "./result-card";
 
@@ -13,7 +15,46 @@ export interface ChatTurn {
   answer: string;
   hadiths: HadithResult[];
   queryId?: string;
+  latencyMs?: number;
+  cost?: CostReport;
   error?: string;
+}
+
+/** "Time: 1.4s · Est. cost: $0.0021 (Embed $0.0001 · Rerank $0.0020 · Summary: free)" */
+function CostMeta({ latencyMs, cost }: { latencyMs?: number; cost?: CostReport }) {
+  const { locale } = useLocale();
+  if (latencyMs == null && !cost) return null;
+  return (
+    <p
+      dir="auto"
+      className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs leading-5 text-muted-foreground"
+    >
+      {latencyMs != null ? (
+        <span>
+          {t(locale, "ask.chat.meta.time")}: {(latencyMs / 1000).toFixed(1)}s
+        </span>
+      ) : null}
+      {cost ? (
+        <span>
+          {t(locale, "ask.chat.meta.cost")}: {formatUsd(cost.totalUsd)}
+          {cost.lines.length > 0 ? (
+            <>
+              {" ("}
+              {cost.lines
+                .map(
+                  (l) =>
+                    `${t(locale, `ask.chat.meta.cost.${l.stage}`)}: ${
+                      l.free ? t(locale, "ask.chat.meta.cost.free") : formatUsd(l.costUsd)
+                    }`,
+                )
+                .join(" · ")}
+              {")"}
+            </>
+          ) : null}
+        </span>
+      ) : null}
+    </p>
+  );
 }
 
 interface ChatMessageProps {
@@ -85,12 +126,21 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
                 {turn.hadiths.map((h, i) => (
                   <ResultCard key={h.id} result={h} rank={i + 1} queryId={turn.queryId} />
                 ))}
+                <p
+                  dir="auto"
+                  className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground"
+                >
+                  <Database className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {t(locale, "ask.chat.db.note")}
+                </p>
               </section>
             ) : turn.answer ? null : (
               <p className="rounded-2xl border border-dashed border-border bg-muted p-4 text-center text-sm leading-7 text-muted-foreground">
                 {t(locale, "ask.chat.empty.hint")}
               </p>
             )}
+
+            <CostMeta latencyMs={turn.latencyMs} cost={turn.cost} />
           </div>
         </div>
       )}

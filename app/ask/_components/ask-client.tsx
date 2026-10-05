@@ -5,6 +5,7 @@ import { BookOpenText, Plus } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult, SourceBook } from "@/types";
+import type { CostReport } from "@/lib/ai/costs";
 import { pushHistory } from "@/lib/workspace";
 import { Button } from "@/components/ui/button";
 import { QueryForm } from "./query-form";
@@ -15,6 +16,8 @@ type AskApiData = {
   queryId: string;
   answer: string;
   hadiths: HadithResult[];
+  latencyMs?: number;
+  cost?: CostReport;
 };
 
 export function AskClient() {
@@ -68,6 +71,8 @@ export function AskClient() {
         answer: json.data.answer ?? "",
         hadiths: json.data.hadiths ?? [],
         queryId: json.data.queryId,
+        latencyMs: json.data.latencyMs,
+        cost: json.data.cost,
       };
       setTurns((prev) => [...prev, turn]);
       pushHistory({

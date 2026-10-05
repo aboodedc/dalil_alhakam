@@ -155,6 +155,7 @@ npx prisma migrate dev --name <change_name>
 | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Chat endpoint | `https://openrouter.ai/api/v1` / — / `meta-llama/llama-3.1-8b-instruct` |
 | `LLM_REWRITE_MODEL` | Light rewriter model | `meta-llama/llama-3.1-8b-instruct` |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME` | OpenRouter attribution headers | `http://localhost:3000` / `Dalil Al-Ahkam` |
+| `COST_EMBED_USD_PER_MTOK` / `COST_RERANK_USD_PER_CALL` / `COST_LLM_USD_PER_MTOK` / `COST_REWRITE_USD_PER_MTOK` | Ask-page cost estimate overrides (defaults: published CF/Cohere prices, `:free` = $0) | — |
 
 Key resolution per model: `EMBEDDING_API_KEY` → `OPENROUTER_API_KEY` → `SILICONFLOW_API_KEY`
 (same chain for RERANKER/LLM) — set per-model keys only if you need different keys.
