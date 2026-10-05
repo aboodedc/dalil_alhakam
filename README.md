@@ -147,6 +147,9 @@ Optional tuning: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (10) · `RAG_MIN_SCORE` (0
 3. `DATABASE_URL=<remote> npm run db:migrate`, then load + embed the corpus
    (`scripts/sync_shamela.py` or pg_restore, then `npm run db:embed`)
 4. `vercel deploy` — `/api/ask` sets `maxDuration = 60` (Hobby; 300 on Pro)
+5. Nothing else to remember: `postinstall` runs `prisma generate` on every
+   Vercel build (the generated client at `lib/generated/` is gitignored, so
+   it must be regenerated in CI)
 
 Full guide: **[`docs/DATABASE.md`](./docs/DATABASE.md)**
 

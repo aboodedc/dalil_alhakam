@@ -20,6 +20,7 @@
 
 ### Prisma 7 specifics (2026-10-02)
 - Generator: `provider = "prisma-client"`, output `lib/generated/prisma` (**gitignored** — run `npm run db:generate` after clone)
+- **CI/Vercel gotcha (2026-10-06)**: `lib/generated/` is gitignored → Vercel build fails at `lib/db.ts:2` (Module not found) unless the client is generated in CI. Fixed with `"postinstall": "prisma generate"` in package.json (runs between `npm install` and `next build` on Vercel; needs no DATABASE_URL; `prisma` CLI + `dotenv` are devDeps which Vercel installs for builds)
 - Client import: `lib/db.ts` → `new PrismaClient({ adapter: new PrismaPg({ connectionString }) })` — adapter is **mandatory** in v7; import the generated client **without** a `.js` extension (`./generated/prisma/client`) so Turbopack can resolve it in API routes
 - **No `url = env("DATABASE_URL")` in `schema.prisma`** — P1012 error in v7. Connection URL lives in `prisma.config.ts` (`datasource.url`) for CLI/migrate, and is passed to the adapter in `lib/db.ts`
 - Optional FK → relation field must be optional too (`query SearchQuery?`, not `query SearchQuery`)
