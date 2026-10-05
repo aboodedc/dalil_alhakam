@@ -1,0 +1,205 @@
+// Dalil Al-Ahkam — Prisma schema
+// RAG pipeline: BGE-M3 (1024-dim embeddings, cosine top-20) → BGE-Reranker-v2-m3 (top-5) → LLM
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+// Corpus (books + hadiths + BGE-M3 embeddings)
+// ─────────────────────────────────────────────────────────────
+
+enum BookStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+// NOTE: all corpus data is Arabic-only (no *En columns). The website UI is
+// bilingual (labels via lib/i18n), but the data itself is always Arabic.
+model Book {
+  id          String     @id @default(cuid())
+  slug        String     @unique // e.g. "bulugh" — used by the frontend as bookId
+  title       String
+  muhaqqiq    String? // تحقيق
+  edition     String?
+  publisher   String?
+  volumes     Int        @default(1)
+  hadithCount Int        @default(0)
+  status      BookStatus @default(ACTIVE)
+  pdfUrl      String? // base scan path for the book (fallback when a hadith has no own scan)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  hadiths Hadith[]
+  queries SearchQuery[]
+}
+
+model Hadith {
+  id           String  @id @default(cuid())
+  bookId       String
+  book         Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  hadithNumber String // e.g. "112" — unique within a book
+  volume       Int     @default(1)
+  page         Int
+  text         String
+  sanad        String[] // سند chain (narrators, companion → collector)
+  hukm         String // primary hukm, e.g. "صحيح"
+  scholar      String? // scholar of the primary hukm
+  topic        String?
+  pdfUrl       String? // scan page for citation
+  isHadith     Boolean @default(false) // false = section/front-matter row, excluded from hadith search/compare
+  seq          Int     @default(0) // order within book, for ±N context windows
+
+  /// BGE-M3 embedding (1024 dims) — written/read via raw SQL (pgvector),
+  /// not exposed through Prisma Client. Cosine search: embedding <=> $1::vector
+  embedding Unsupported("vector(1024)")?
+
+  alternatives HadithHukmAlternative[]
+  results      SearchResult[]
+  savedIn      SavedHadith[]
+  ratings      Rating[]
+  reports      Report[]
+
+  @@unique([bookId, hadithNumber])
+  @@index([bookId])
+  @@index([bookId, seq])
+  @@index([bookId, isHadith])
+}
+
+/// Alternative scholarly hukm for the same hadith (e.g. الألباني: صحيح)
+model HadithHukmAlternative {
+  id        String  @id @default(cuid())
+  hadithId  String
+  hadith    Hadith  @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  hukm      String
+  scholar   String?
+
+  @@index([hadithId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Users, workspace (folders), history, ratings, reports
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  MANAGER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String? // null → OAuth mock / not yet implemented
+  role         UserRole @default(USER)
+  totpEnabled  Boolean  @default(false) // manager/admin 2FA flag (SRS)
+  createdAt    DateTime @default(now())
+
+  folders Folder[]
+  queries SearchQuery[]
+  ratings Rating[]
+  reports Report[]
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+model Report {
+  id        String       @id @default(cuid())
+  userId    String?
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  hadithId  String
+  hadith    Hadith       @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  queryId   String?
+  query     SearchQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  reason    String // e.g. wrong citation / wrong hukm / scan mismatch
+  details   String?
+  status    ReportStatus @default(OPEN)
+  createdAt DateTime     @default(now())
+
+  @@index([hadithId])
+}
+
+model Rating {
+  id        String      @id @default(cuid())
+  userId    String?
+  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  hadithId  String
+  hadith    Hadith      @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  queryId   String?
+  query     SearchQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
+  stars     Int // 1..5 (SRS 5-star rating on results)
+  comment   String?
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, hadithId, queryId])
+}
+
+model Folder {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  createdAt DateTime      @default(now())
+  saved     SavedHadith[]
+
+  @@unique([userId, name])
+}
+
+model SavedHadith {
+  id        String   @id @default(cuid())
+  folderId  String
+  folder    Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  hadithId  String
+  hadith    Hadith   @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  note      String?
+  savedAt   DateTime @default(now())
+
+  @@unique([folderId, hadithId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// RAG search history — one row per ask, with per-stage scores
+// ─────────────────────────────────────────────────────────────
+
+model SearchQuery {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  question  String
+  answer    String? // LLM final answer (stage 3)
+  bookId    String? // optional book scope filter
+  book      Book?    @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  latencyMs Int? // full pipeline latency
+  createdAt DateTime @default(now())
+
+  results SearchResult[]
+  ratings Rating[]
+  reports Report[]
+
+  @@index([userId, createdAt])
+}
+
+/// Per-hadith scores from each retrieval stage, kept for analytics/transparency:
+/// stage 1 — BGE-M3 cosine score, stage 2 — BGE-Reranker-v2-m3 score, final rank
+model SearchResult {
+  id          String      @id @default(cuid())
+  queryId     String
+  query       SearchQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  hadithId    String
+  hadith      Hadith      @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  rank        Int // 1 = best after rerank
+  cosineScore Float // stage 1: BGE-M3 cosine similarity
+  rerankScore Float? // stage 2: BGE-Reranker-v2-m3 relevance score
+
+  @@unique([queryId, hadithId])
+}

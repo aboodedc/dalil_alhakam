@@ -1,0 +1,22 @@
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "./generated/prisma/client";
+
+// Prisma 7 requires a driver adapter; reuse one client across hot reloads in dev.
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error(
+    "DATABASE_URL is not set. Copy .env.example to .env and configure your PostgreSQL connection.",
+  );
+}
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter: new PrismaPg({ connectionString }),
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
