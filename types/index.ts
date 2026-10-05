@@ -7,7 +7,7 @@ export type BookStatus = "active" | "suspended";
 export interface SourceBook {
   id: string;
   title: string;
-  muhaqqiq: string;
+  muhaqqiq: string; 
   edition: string;
   publisher: string;
   volumes: number;
