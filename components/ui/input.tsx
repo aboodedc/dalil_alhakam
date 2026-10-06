@@ -1,13 +1,13 @@
 import * as React from "react";
+import * as LabelPrimitive from "@radix-ui/react-label";
 import { cn } from "@/lib/utils";
 
-export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
-
-export function Input({ className, ...props }: InputProps) {
+function Input({ className, type, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
+      type={type}
       className={cn(
-        "flex min-h-[44px] w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-2 focus:outline-emerald-600 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500",
+        "flex min-h-[44px] w-full rounded-xl border border-input bg-card px-3 py-2 text-base shadow-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm",
         className
       )}
       {...props}
@@ -15,11 +15,11 @@ export function Input({ className, ...props }: InputProps) {
   );
 }
 
-export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+function Textarea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       className={cn(
-        "flex min-h-[96px] w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm leading-6 focus:border-emerald-600 focus:outline-2 focus:outline-emerald-600 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100 dark:placeholder:text-stone-500",
+        "flex min-h-[96px] w-full rounded-xl border border-input bg-card px-3 py-2 text-base leading-7 shadow-none transition-colors placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm",
         className
       )}
       {...props}
@@ -27,11 +27,11 @@ export function Textarea({ className, ...props }: React.TextareaHTMLAttributes<H
   );
 }
 
-export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
+function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <select
       className={cn(
-        "flex min-h-[44px] w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm focus:border-emerald-600 focus:outline-2 focus:outline-emerald-600 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100",
+        "flex min-h-[44px] w-full rounded-xl border border-input bg-card px-3 py-2 text-sm shadow-none transition-colors focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50",
         className
       )}
       {...props}
@@ -39,6 +39,13 @@ export function Select({ className, ...props }: React.SelectHTMLAttributes<HTMLS
   );
 }
 
-export function Label({ className, ...props }: React.LabelHTMLAttributes<HTMLLabelElement>) {
-  return <label className={cn("mb-1.5 block text-sm font-medium", className)} {...props} />;
+function Label({ className, ...props }: React.ComponentProps<typeof LabelPrimitive.Root>) {
+  return (
+    <LabelPrimitive.Root
+      className={cn("mb-1.5 block text-sm leading-6 font-medium", className)}
+      {...props}
+    />
+  );
 }
+
+export { Input, Textarea, Select, Label };

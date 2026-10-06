@@ -5,6 +5,8 @@ import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { SourceBook } from "@/types";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 
 interface ChatComposerProps {
   value: string;
@@ -34,7 +36,8 @@ export function QueryForm({
         e.preventDefault();
         onSubmit();
       }}
-      className="rounded-2xl border border-border bg-card shadow-lg shadow-stone-200/40 dark:shadow-none"
+      className="card-glow rounded-2xl border border-border bg-card"
+      dir="rtl"
     >
       <label htmlFor="chat-input" className="sr-only">
         {t(locale, "ask.query.label")}
@@ -54,15 +57,16 @@ export function QueryForm({
         dir="auto"
         className="max-h-[200px] min-h-[56px] w-full resize-y rounded-t-2xl bg-transparent px-4 pt-3 pb-1 text-[15px] leading-7 break-words placeholder:text-muted-foreground focus:outline-none"
       />
-      <div className="flex items-center gap-2 border-t border-border px-3 py-2">
+      <Separator />
+      <div className="flex items-center gap-2 px-3 py-2">
         <label htmlFor="chat-scope" className="sr-only">
           {t(locale, "ask.scope")}
         </label>
-        <select
+        <Select
           id="chat-scope"
           value={scope}
           onChange={(e) => onScopeChange(e.target.value)}
-          className="h-11 min-h-[44px] w-auto max-w-[45%] truncate rounded-lg bg-transparent px-2 text-[13px] text-muted-foreground focus:outline-2 focus:outline-emerald-700"
+          className="h-11 w-auto max-w-[45%] truncate border-0 bg-transparent px-2 text-[13px] text-muted-foreground focus-visible:ring-0"
         >
           <option value="all">{t(locale, "ask.scope.all")}</option>
           {books
@@ -72,7 +76,7 @@ export function QueryForm({
                 {b.title}
               </option>
             ))}
-        </select>
+        </Select>
         <span className="ms-auto hidden text-xs text-muted-foreground sm:block">
           {t(locale, "ask.disclaimer")}
         </span>

@@ -25,13 +25,19 @@ type ServerHistory = {
 export function WorkspaceClient() {
   const { locale } = useLocale();
   const ar = locale === "ar";
-  const [folders, setFolders] = useState<ResearchFolder[]>(() => getFolders());
-  const [history, setHistory] = useState<SearchHistoryEntry[]>(() => getHistory());
+  // NOTE: localStorage is read in the effect below, never in useState
+  // initializers — those run during prerender too, and differing server/client
+  // values cause hydration mismatches (folders grid vs empty state).
+  const [folders, setFolders] = useState<ResearchFolder[]>([]);
+  const [history, setHistory] = useState<SearchHistoryEntry[]>([]);
   const [draft, setDraft] = useState("");
 
   // Merge server-side history/folders when the DB is reachable.
   useEffect(() => {
     let cancelled = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional post-hydration sync with localStorage; reading it during render would cause a hydration mismatch
+    setFolders(getFolders());
+    setHistory(getHistory());
     fetch("/api/history?limit=20")
       .then((r) => r.json())
       .then((j) => {
@@ -72,7 +78,7 @@ export function WorkspaceClient() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6">
-      <PageHeader title={t(locale, "workspace.title")} subtitle="SRS §6.1, §6.3 · FR-007" />
+      <PageHeader title={t(locale, "workspace.title")} subtitle={t(locale, "workspace.subtitle")} />
 
       <section className="flex flex-col gap-4" aria-label={t(locale, "workspace.folders")}>
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -105,7 +111,7 @@ export function WorkspaceClient() {
                   {f.itemIds.map((id) => {
                     const h = MOCK_HADITHS.find((m) => m.id === id);
                     return (
-                      <p key={id} className="rounded-lg bg-stone-50 p-2 text-sm leading-6 dark:bg-stone-800" dir="rtl">
+                      <p key={id} className="rounded-xl bg-muted p-2 text-sm leading-6" dir="rtl">
                         {h ? `${h.text.slice(0, 90)}… · #${h.hadithNumber}` : ar ? `حديث محفوظ: ${id}` : `Saved: ${id}`}
                       </p>
                     );
@@ -124,10 +130,10 @@ export function WorkspaceClient() {
         ) : (
           <ul className="flex flex-col gap-2">
             {history.map((h) => (
-              <li key={h.id} className="flex flex-wrap items-center gap-2 rounded-lg border border-stone-200 p-3 text-sm dark:border-stone-800">
+              <li key={h.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm">
                 <span className="font-medium">{h.query}</span>
-                <span className="text-stone-500 dark:text-stone-400">· {h.resultCount} · {new Date(h.createdAt).toLocaleString()}</span>
-                <Link href="/ask" className="ms-auto font-medium text-emerald-800 underline underline-offset-4 dark:text-emerald-400">
+                <span className="text-muted-foreground">· {h.resultCount} · {new Date(h.createdAt).toLocaleString()}</span>
+                <Link href="/ask" className="ms-auto font-medium text-primary underline underline-offset-4">
                   {t(locale, "ask.submit")}
                 </Link>
               </li>

@@ -29,11 +29,12 @@ cd "/mnt/d/Program Files/PostgreSQL/18/bin"
 
 ```
 [1] User's (long) question
-  └─ [2] Light LLM / query rewriter — ALWAYS runs (falls back to original on failure)
+  └─ [2] Light LLM / query rewriter (gemini-3.5-flash-lite, Google) — ALWAYS runs (falls back to original on failure)
   └─ [3] BGE-M3 embedding + pgvector cosine search → top 30 (RAG_RECALL_K)
-  └─ [4] Reranker (voyageai/rerank-3-lite) vs ORIGINAL question → top 10 (RAG_FINAL_K)
+  └─ [4] Reranker (Cohere rerank-multilingual-v3.0) vs ORIGINAL question → top 3 (RAG_FINAL_K)
   └─ [5] Direct fetch from PostgreSQL (text + book/muhaqqiq/volume/page/number + sanad/hukm)
   └─ [6] Direct display in UI — sorted best-first, similarity % (cosine × 100)
+         (optional grounded summary via RAG_ANSWER_ENABLED=true)
 ```
 
 - **Default stack (deploy target: Vercel): all three models on OpenRouter with ONE key**
@@ -44,10 +45,15 @@ cd "/mnt/d/Program Files/PostgreSQL/18/bin"
   same provider. After switching `EMBEDDING_BASE_URL` (e.g. local Ollama → OpenRouter),
   run `npm run db:reembed` — otherwise similarity scores degrade.
 - Reranker: **optional**. Without a key the pipeline ranks by cosine order (stage 4
-  skipped, never blocks). OpenRouter alternative: `voyageai/rerank-3-lite`;
-  **Cohere v2 (verified live 2026-10-05)**: `RERANKER_BASE_URL=https://api.cohere.com/v2`
-  + `rerank-multilingual-v3.0`; SiliconFlow alternative: `BAAI/bge-reranker-v2-m3`.
-- Cutoff: cosine < `RAG_MIN_SCORE` (default **0.30**) is hidden as irrelevant.
+  skipped, never blocks). **Current live stack: Cohere v2 (verified)**:
+  `RERANKER_BASE_URL=https://api.cohere.com/v2` + `rerank-multilingual-v3.0`;
+  OpenRouter alternative: `voyageai/rerank-3-lite`; SiliconFlow alternative:
+  `BAAI/bge-reranker-v2-m3`.
+- **LLM (current live stack)**: Google Gemini `gemini-3.5-flash-lite` via the
+  OpenAI-compat endpoint `https://generativelanguage.googleapis.com/v1beta/openai/`
+  (key from aistudio.google.com/apikey). Summary is OFF by default
+  (`RAG_ANSWER_ENABLED=false` — hadiths-only); the rewriter always runs.
+- Cutoff: cosine < `RAG_MIN_SCORE` (default **0.40**) is hidden as irrelevant.
   If **all** are hidden → empty list + "no matching hadith" empty state.
 - Offline dev: local base URLs (localhost / private IP ranges) need **no** API key
   (`isLocalBaseUrl`) — point `*_BASE_URL` at a local Ollama (`http://localhost:11434/v1`).
@@ -172,13 +178,13 @@ npx prisma migrate dev --name <change_name>
 | `EMBEDDING_BASE_URL` / `EMBEDDING_API_KEY` / `EMBEDDING_MODEL` | BGE-M3 endpoint | `https://openrouter.ai/api/v1` / — / `baai/bge-m3` |
 | `RERANKER_BASE_URL` / `RERANKER_API_KEY` / `RERANKER_MODEL` | Reranker endpoint | `https://openrouter.ai/api/v1` / — / `voyageai/rerank-3-lite` |
 | `RAG_RECALL_K` | Step 3 candidates | `30` |
-| `RAG_FINAL_K` | Step 4 kept for display | `10` |
-| `RAG_MIN_SCORE` | Hide cutoff (cosine) | `0.30` |
+| `RAG_FINAL_K` | Step 4 kept for display | `3` |
+| `RAG_MIN_SCORE` | Hide cutoff (cosine) | `0.40` |
 | `QUERY_REWRITE_ENABLED` | Step 2 always-on switch | `true` |
 | `QUERY_REWRITE_MIN_LENGTH` | Min chars before rewrite LLM is called (`0` = always send to AI) | `24` |
 | `RAG_ANSWER_ENABLED` | Step 6 LLM summary switch (`false` = hadiths only, no summary) | `true` |
-| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Chat endpoint | `https://openrouter.ai/api/v1` / — / `meta-llama/llama-3.1-8b-instruct` |
-| `LLM_REWRITE_MODEL` | Light rewriter model | `meta-llama/llama-3.1-8b-instruct` |
+| `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Chat endpoint | `https://generativelanguage.googleapis.com/v1beta/openai/` / — / `gemini-3.5-flash-lite` |
+| `LLM_REWRITE_MODEL` | Light rewriter model | `gemini-3.5-flash-lite` |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME` | OpenRouter attribution headers | `http://localhost:3000` / `Dalil Al-Ahkam` |
 | `COST_EMBED_USD_PER_MTOK` / `COST_RERANK_USD_PER_CALL` / `COST_LLM_USD_PER_MTOK` / `COST_REWRITE_USD_PER_MTOK` | Ask-page cost estimate overrides (defaults: published CF/Cohere prices, `:free` = $0) | — |
 

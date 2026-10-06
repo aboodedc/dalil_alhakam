@@ -1,13 +1,21 @@
+import { Badge } from "@/components/ui/badge";
+
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  eyebrow?: string;
 }
 
-export function PageHeader({ title, subtitle }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, eyebrow }: PageHeaderProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="text-2xl font-bold tracking-tight text-stone-900 sm:text-3xl dark:text-stone-100">{title}</h1>
-      {subtitle ? <p className="text-sm leading-6 text-stone-600 sm:text-base dark:text-stone-400">{subtitle}</p> : null}
+    <div className="flex flex-col gap-1.5">
+      {eyebrow ? (
+        <Badge variant="primary" className="w-fit">
+          {eyebrow}
+        </Badge>
+      ) : null}
+      <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+      {subtitle ? <p className="text-sm leading-6 text-muted-foreground sm:text-base">{subtitle}</p> : null}
     </div>
   );
 }

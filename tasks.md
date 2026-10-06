@@ -1,6 +1,6 @@
 # 📋 Project Tasks — Dalil Al-Ahkam
 
-> Last updated: 2026-10-05
+> Last updated: 2026-10-06
 
 ---
 
@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 22 |
+| ✅ DONE | 23 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -119,6 +119,19 @@
 _No tasks yet._
 
 ### 🔧 Refactoring / Improvement
+
+- [x] ✅ **TASK-024**: Submission bundle + README delivery guide + ready-to-submit pptx
+  - **Priority**: High
+  - **Category**: Refactoring
+  - **SRS Ref**: FR-003, FR-004
+  - **Created**: 2026-10-06
+  - **Completed**: 2026-10-06
+  - **Notes**:
+    - Documented the full submission flow on `islamicaich.org` (dashboard → بيانات المشاركة → تسليم المشروع النهائي form with 7 required fields → تم الحفظ بنجاح → التسليمات table with view/edit)
+    - `README.md`: new «تسليم المشروع النهائي — آلية التسليم على منصة التحدي» section (platform steps, 7-field table mapped to our project, 5 track options with 01 chosen, template rules, pre-submit checklist)
+    - `docs/dalil-al-ahkam-presentation.pptx` (new, 10 slides, 16:9, brand colors #12183F/#6150EA/#2EF2C2/#F2F4FF, 0.04MB < 10MB limit): cover → problem → solution → pipeline → live model → impact → criteria → delivery → team/links → thanks
+    - `docs/PRESENTATION.md`: fixed stale corpus (6 books → 2 books / 2,656 rows / 2,213 searchable), linked the generated pptx
+    - Still TODO by user: 2-min YouTube demo link, Vercel live-demo URL, GitHub public repo URL, team names
 
 - [x] ✅ **TASK-023**: Click hadith → sanad + hukm + source dialog with AI fallback
   - **Priority**: High

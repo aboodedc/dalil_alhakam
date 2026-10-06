@@ -1,7 +1,7 @@
 # 🧠 Important — Project Memory
 
 > This file is the AI's memory. Read it at the start of every conversation.
-> Last updated: 2026-10-03
+> Last updated: 2026-10-06
 
 ---
 
@@ -30,6 +30,7 @@
 - `Hadith.embedding` is `Unsupported("vector(1024)")` — never read/written via client, only raw SQL (`<=>` cosine operator)
 
 ### RAG pipeline (2026-10-05 decision — ALL-REMOTE OpenRouter, Vercel-ready)
+- **Stack switch (2026-10-06, user decision)**: LLM moved from OpenRouter nemotron-`:free` to **Google Gemini `gemini-3.5-flash-lite`** via the OpenAI-compat endpoint `https://generativelanguage.googleapis.com/v1beta/openai/` (key from aistudio.google.com/apikey, starts `AIza…`) — answer + rewriter, both `LLM_MODEL`/`LLM_REWRITE_MODEL`. Tuning changed with it: `RAG_FINAL_K=3` (was 10), `RAG_MIN_SCORE=0.40` (was 0.30), `QUERY_REWRITE_MIN_LENGTH=0` (always rewrite), `RAG_ANSWER_ENABLED=false` (hadiths-only, no «الخلاصة» box). `OPENROUTER_API_KEY` stays as optional shared fallback key only. Cost note: Gemini pricing is NOT auto-detected in `lib/ai/costs.ts` (unknown model → $0.00) — set `COST_REWRITE_USD_PER_MTOK` to count it.
 - **Hadiths-only mode (2026-10-06, user decision)**: `RAG_ANSWER_ENABLED=false` in `.env` → stage 6 (LLM summary) skipped; `/api/ask` returns ONLY the reranked hadith list (no «الخلاصة» box); stage 2 rewrite still runs; `isAnswerEnabled()` in `lib/ai/providers.ts`; latency ≈ 5s/request. Set `true` to restore the summary.
 - **Cost display (2026-10-05)**: `lib/ai/costs.ts` — per-request USD estimate per stage (embed/rewrite/rerank/answer) returned by `/api/ask` as `cost` and shown on the ask page under every answer (`CostMeta` in `chat-message.tsx`, i18n `ask.chat.meta.cost.*` + `ask.chat.db.note`); current stack ≈ **$0.002/request** (Cohere rerank is the only real cost); `COST_*` env overrides; estimates from chars/3 — labeled "تقديرية"
 - **DB-sourced guarantee (2026-10-05, user requirement)**: hadith text/sanad/hukm in the UI are ALWAYS verbatim DB rows (`pipeline.ts` step 5a fetches rows; reranker only reorders; LLM only writes the summary) — explicit comment + UI note (Database icon) + README claim
@@ -38,7 +39,7 @@
 - Step 4: **reranker** vs the **ORIGINAL** question → top **10** (`RAG_FINAL_K`) — **optional**: without a key the pipeline skips to cosine order (info log, never blocks)
 - Step 5: direct Postgres fetch (text + book/muhaqqiq/volume/page/number + sanad/hukm)
 - Step 6: direct UI display, sorted best-first, similarity % = cosine × 100
-- Cutoff: cosine < `RAG_MIN_SCORE` (**0.30**) hidden; all hidden → "no matching hadith" empty state
+- Cutoff: cosine < `RAG_MIN_SCORE` (**0.40** current, was 0.30) hidden; all hidden → "no matching hadith" empty state
 - **Default stack (user decision 2026-10-05: deploy to Vercel, nothing local): ALL on OpenRouter with ONE key** — `baai/bge-m3` (embeddings) + `voyageai/rerank-3-lite` (reranker) + `meta-llama/llama-3.1-8b-instruct` (LLM + rewriter). Key chain per model: `*_API_KEY → OPENROUTER_API_KEY → SILICONFLOW_API_KEY`
 - **⚠ Embedding consistency rule**: corpus + queries MUST use the same embedding provider → `npm run db:reembed` (reset + re-embed all) after ANY switch (the local corpus was embedded via Ollama; switching to OpenRouter requires reembed)
 - `app/api/ask/route.ts` sets `maxDuration = 60` for Vercel (raise to 300 on Pro)
@@ -146,10 +147,8 @@
 
 ## 🔌 External Services
 
-### Providers — OpenRouter (reranker+LLM) + Cloudflare bge-m3 (2026-10-05)
-- **Default stack (deploy target: Vercel)**: reranker+LLM on OpenRouter (`voyageai/rerank-3-lite` + `meta-llama/llama-3.1-8b-instruct`), **embeddings on Cloudflare Workers AI `@cf/baai/bge-m3`** (1024 dims, same as `baai/bge-m3` — no schema change)
-- **Current live stack (verified E2E 2026-10-06 against Prisma Postgres, keys in .env)**: embeddings = Cloudflare Workers AI `@cf/baai/bge-m3` (1024 dims ✓); reranker = **Cohere v2** `rerank-multilingual-v3.0` (Arabic ✓); LLM = OpenRouter FREE — **`nvidia/nemotron-3-super-120b-a12b:free`** (answer + rewriter, ~10s full pipeline). E2E 2026-10-06: rewrite ✓ · cosine ✓ · rerank ✓ · persist ✓ · grounded cited Arabic answer ✓
-- **LLM model history (2026-10-06)**: `google/gemma-4-31b-it:free` persistently 429-rate-limited upstream (transient OpenRouter free-pool issue, not the key) → switched to nemotron. Verified alternatives: `nvidia/nemotron-3-ultra-550b-a55b:free` (best answers, ~2min — too slow for Vercel's 60s), `dots-studio/dots-3-note-preview:free`. `lib/ai/llm.ts` now retries 429 once + falls back to `reasoning` when thinking models leave `content` empty (same fix as the Ollama quirk)
+### Providers — Cloudflare bge-m3 (embed) + Cohere (rerank) + Google Gemini (LLM)
+- **Current live stack (user decision 2026-10-06)**: embeddings = Cloudflare Workers AI `@cf/baai/bge-m3` (1024 dims ✓); reranker = **Cohere v2** `rerank-multilingual-v3.0` (Arabic ✓); LLM = **Google Gemini `gemini-3.5-flash-lite`** via `https://generativelanguage.googleapis.com/v1beta/openai/` (OpenAI-compat — no code change; answer OFF by default + rewriter ON, `QUERY_REWRITE_MIN_LENGTH=0` = always). Previous LLM history: Ollama qwen3.5 → OpenRouter `meta-llama/llama-3.1-8b-instruct` → `google/gemma-4-31b-it:free` (429 upstream) → `nvidia/nemotron-3-super-120b-a12b:free` → **Gemini (current)**. `lib/ai/llm.ts` keeps 429-retry + `reasoning` fallback.
 - Cloudflare endpoints (both supported by `lib/ai/siliconflow.ts`): OpenAI-compat `https://api.cloudflare.com/client/v4/accounts/{id}/ai/v1` (POST `/embeddings`, recommended) OR native `.../accounts/{id}/ai/run` (POST `/{model}` with `{text}`); key = CF API token in `EMBEDDING_API_KEY`; test: `scripts/verify-cloudflare-embed.ts`
 - Key chain per model: `EMBEDDING_API_KEY`/`RERANKER_API_KEY`/`LLM_API_KEY` → shared `OPENROUTER_API_KEY` → legacy `SILICONFLOW_API_KEY` (set just `OPENROUTER_API_KEY` in Vercel)
 - `lib/ai/providers.ts`: local base URLs (localhost/private IPs, `isLocalBaseUrl`) need NO key; remote require keys; OpenRouter keys must start `sk-or-v1-` (fail-fast `openRouterKeyCheck`)

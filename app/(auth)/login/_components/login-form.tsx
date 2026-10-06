@@ -40,12 +40,12 @@ export function LoginForm() {
           <div>
             <Label htmlFor="email">{t(locale, "login.email")}</Label>
             <Input id="email" name="email" type="email" autoComplete="email" required aria-invalid={!!errors.email} />
-            {errors.email ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.email}</p> : null}
+            {errors.email ? <p className="mt-1 text-sm text-destructive">{errors.email}</p> : null}
           </div>
           <div>
             <Label htmlFor="password">{t(locale, "login.password")}</Label>
             <Input id="password" name="password" type="password" autoComplete="current-password" required minLength={6} />
-            {errors.password ? <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.password}</p> : null}
+            {errors.password ? <p className="mt-1 text-sm text-destructive">{errors.password}</p> : null}
           </div>
           <div>
             <Label htmlFor="totp">{t(locale, "login.totp")}</Label>
@@ -56,8 +56,8 @@ export function LoginForm() {
             <Globe className="h-4 w-4" />
             {t(locale, "login.google")} (mock)
           </Button>
-          <p className="text-center text-sm text-stone-600 dark:text-stone-400">
-            <Link href="/register" className="font-medium text-emerald-800 underline underline-offset-4 dark:text-emerald-400">
+          <p className="text-center text-sm text-muted-foreground">
+            <Link href="/register" className="font-medium text-primary underline underline-offset-4">
               {t(locale, "login.noaccount")}
             </Link>
           </p>

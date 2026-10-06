@@ -1,13 +1,23 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Bot, Database, FileText, Loader2, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AlertCircle, Bot, Database, FileText, Loader2 } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
 import { formatCitation } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog,
+  DialogBody,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 
 interface HadithDetailsData {
   id: string;
@@ -80,60 +90,24 @@ export function HadithDetailDialog({ result, open, onOpenChange }: HadithDetailD
   const { locale } = useLocale();
   const [attempt, setAttempt] = useState(0);
 
-  const close = useCallback(() => onOpenChange(false), [onOpenChange]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") close();
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
-
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4"
-      role="presentation"
-      onClick={close}
-    >
-      <div className="fixed inset-0 bg-black/50" aria-hidden />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t(locale, "ask.details.title")}
-        onClick={(e) => e.stopPropagation()}
-        className="relative flex max-h-[90dvh] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-xl sm:max-w-lg sm:rounded-2xl"
-      >
-        <div className="flex items-center gap-2 border-b border-border p-4 sm:px-5">
-          <h2 className="min-w-0 flex-1 truncate text-base font-bold sm:text-lg">
-            {t(locale, "ask.details.title")}
-          </h2>
-          <button
-            autoFocus
-            type="button"
-            onClick={close}
-            aria-label={t(locale, "ask.details.close")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent aria-label={t(locale, "ask.details.title")}>
+        <DialogHeader>
+          <DialogTitle>{t(locale, "ask.details.title")}</DialogTitle>
+        </DialogHeader>
         {/* Remount per open/retry so "loading" is the initial state (no setState-in-effect). */}
-        <DialogBody
+        <DetailBody
           key={`${result.id}-${attempt}`}
           result={result}
           onRetry={() => setAttempt((n) => n + 1)}
         />
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => void }) {
+function DetailBody({ result, onRetry }: { result: HadithResult; onRetry: () => void }) {
   const { locale } = useLocale();
   const [state, setState] = useState<DetailsState>(() => {
     const cached = getCachedDetails(result.id);
@@ -174,39 +148,40 @@ function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
 
   if (state.status === "loading") {
     return (
-      <div
-        className="flex min-w-0 flex-1 flex-col items-center gap-3 overflow-y-auto p-4 py-8 text-center sm:p-5"
+      <DialogBody
         role="status"
         aria-label={t(locale, "ask.details.loading")}
         dir="rtl"
+        className="flex min-w-0 flex-1 flex-col items-center gap-3 py-8 text-center"
       >
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-700 dark:text-emerald-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm leading-7 font-medium">{t(locale, "ask.details.loading")}</p>
         <p className="max-w-sm text-xs leading-6 text-muted-foreground">
           {t(locale, "ask.details.loading.ai")}
         </p>
         <div className="mt-2 flex w-full flex-col gap-2" aria-hidden>
-          <div className="h-4 w-3/4 animate-pulse rounded-md bg-stone-200 dark:bg-stone-800" />
-          <div className="h-4 w-1/2 animate-pulse rounded-md bg-stone-200 dark:bg-stone-800" />
-          <div className="h-4 w-2/3 animate-pulse rounded-md bg-stone-200 dark:bg-stone-800" />
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-4 w-2/3" />
         </div>
-      </div>
+      </DialogBody>
     );
   }
 
   if (state.status === "error") {
     return (
-      <div
-        role="alert"
+      <DialogBody
         dir="rtl"
-        className="flex flex-col items-center gap-3 overflow-y-auto p-4 py-8 text-center text-sm leading-7 sm:p-5"
+        className="flex flex-col items-center gap-3 py-8 text-center text-sm leading-7"
       >
-        <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
-        <p className="break-words">{state.message}</p>
+        <Alert variant="destructive" className="w-full">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <AlertDescription className="text-foreground">{state.message}</AlertDescription>
+        </Alert>
         <Button type="button" variant="outline" size="sm" onClick={onRetry}>
           {t(locale, "common.retry")}
         </Button>
-      </div>
+      </DialogBody>
     );
   }
 
@@ -220,18 +195,18 @@ function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
   });
 
   return (
-    <div className="min-w-0 flex-1 overflow-y-auto p-4 sm:p-5" dir="rtl">
+    <DialogBody dir="rtl">
       <div className="flex min-w-0 flex-col gap-5">
         {data.aiGenerated ? (
-          <p className="flex items-start gap-1.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-6 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+          <Alert variant="warning">
             <Bot className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             <span>
-              <Badge className="border-amber-200 bg-amber-100 text-amber-900 dark:border-amber-700 dark:bg-amber-900 dark:text-amber-100">
+              <Badge variant="warning">
                 {t(locale, "ask.details.ai.badge")}
               </Badge>{" "}
-              {t(locale, "ask.details.ai.note")}
+              <AlertDescription>{t(locale, "ask.details.ai.note")}</AlertDescription>
             </span>
-          </p>
+          </Alert>
         ) : (
           <p className="flex items-start gap-1.5 text-xs leading-5 text-muted-foreground">
             <Database className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
@@ -247,13 +222,14 @@ function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
               href={data.source.pdfUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg py-1.5 text-sm font-medium text-emerald-800 underline underline-offset-4 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg py-1.5 text-sm font-medium text-primary underline underline-offset-4 hover:bg-muted"
             >
               <FileText className="h-4 w-4" />
               {t(locale, "ask.pdf")}
             </a>
           ) : null}
         </section>
+        <Separator />
 
         <section aria-label={t(locale, "ask.sanad")}>
           <h3 className="mb-1.5 text-sm font-bold">{t(locale, "ask.sanad")}</h3>
@@ -284,7 +260,8 @@ function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
           {data.hukm ? (
             <div className="flex flex-wrap items-center gap-2">
               <Badge
-                className="border-amber-200 bg-amber-50 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                variant="warning"
+                className="text-sm"
                 dir="rtl"
               >
                 {[data.hukm, data.scholar].filter(Boolean).join(" — ")}
@@ -311,6 +288,6 @@ function DialogBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
           ) : null}
         </section>
       </div>
-    </div>
+    </DialogBody>
   );
 }

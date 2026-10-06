@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bookmark, Download, FileText, Flag, ScrollText, Star } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
@@ -25,7 +25,14 @@ function isRealPdf(url: string | null | undefined): url is string {
 
 export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   const { locale } = useLocale();
-  const [rating, setR] = useState(() => getRatings()[result.id] ?? 0);
+  // Rating is loaded client-only: getRatings() reads localStorage, which
+  // differs between prerender and hydration — a lazy initializer would
+  // render different stars on server vs client (hydration mismatch).
+  const [rating, setR] = useState(0);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional post-hydration sync with localStorage; reading it during render would cause a hydration mismatch
+    setR(getRatings()[result.id] ?? 0);
+  }, [result.id]);
   const [saved, setSaved] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const citation = formatCitation({
@@ -71,7 +78,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center gap-2">
-          <Badge className="border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          <Badge variant="primary">
             #{rank}
           </Badge>
           {result.topic ? <Badge>{result.topic}</Badge> : null}
@@ -83,7 +90,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
           type="button"
           onClick={() => setDetailsOpen(true)}
           title={t(locale, "ask.details.open")}
-          className="cursor-pointer rounded-lg pt-1 text-start text-[15px] leading-8 break-words hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          className="cursor-pointer rounded-lg pt-1 text-start text-[15px] leading-8 break-words hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           dir="rtl"
         >
           {result.text}
@@ -116,7 +123,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold">{t(locale, "ask.hukm")}:</span>
             <Badge
-              className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+              variant="warning"
               dir="rtl"
             >
               {[result.hukm, result.scholar].filter(Boolean).join(" — ")}
@@ -149,7 +156,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
               href={result.pdfUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-emerald-800 underline underline-offset-4 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950"
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-primary underline underline-offset-4 hover:bg-muted"
             >
               <FileText className="h-4 w-4" />
               {t(locale, "ask.pdf")}
@@ -171,8 +178,8 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
                 className={cn(
                   "min-h-[44px] min-w-[36px] rounded p-1",
                   s <= rating
-                    ? "text-amber-500 dark:text-amber-400"
-                    : "text-stone-300 hover:text-amber-400 dark:text-stone-600 dark:hover:text-amber-400"
+                    ? "text-amber-500"
+                    : "text-muted-foreground/40 hover:text-amber-400"
                 )}
                 aria-label={`${t(locale, "ask.rate")} ${s}/5`}
               >

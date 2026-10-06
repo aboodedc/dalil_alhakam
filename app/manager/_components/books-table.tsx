@@ -9,6 +9,9 @@ import { MOCK_BOOKS } from "@/lib/mock/books";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export function BooksTable() {
   const { locale } = useLocale();
@@ -64,35 +67,35 @@ export function BooksTable() {
   return (
     <Card>
       {notice ? (
-        <p className="border-b border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200" role="status">
-          {notice}
-        </p>
+        <Alert variant="warning" className="rounded-none border-x-0 border-t-0">
+          <AlertDescription>{notice}</AlertDescription>
+        </Alert>
       ) : null}
-      <CardContent className="overflow-x-auto p-0">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead>
-            <tr className="border-b border-stone-200 bg-stone-50 text-start dark:border-stone-800 dark:bg-stone-900">
-              <th className="p-3 text-start font-semibold">{ar ? "الكتاب" : "Book"}</th>
-              <th className="p-3 text-start font-semibold">{ar ? "المحقق" : "Muhaqqiq"}</th>
-              <th className="p-3 text-start font-semibold">{ar ? "الطبعة / الناشر" : "Edition / Publisher"}</th>
-              <th className="p-3 text-start font-semibold">{ar ? "المجلدات" : "Volumes"}</th>
-              <th className="p-3 text-start font-semibold">{ar ? "الحالة" : "Status"}</th>
-              <th className="p-3 text-start font-semibold">{ar ? "إجراءات" : "Actions"}</th>
-            </tr>
-          </thead>
-          <tbody>
+      <CardContent className="p-0">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{ar ? "الكتاب" : "Book"}</TableHead>
+              <TableHead>{ar ? "المحقق" : "Muhaqqiq"}</TableHead>
+              <TableHead>{ar ? "الطبعة / الناشر" : "Edition / Publisher"}</TableHead>
+              <TableHead>{ar ? "المجلدات" : "Volumes"}</TableHead>
+              <TableHead>{ar ? "الحالة" : "Status"}</TableHead>
+              <TableHead>{ar ? "إجراءات" : "Actions"}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {books.map((b) => (
-              <tr key={b.id} className="border-b border-stone-100 last:border-0 dark:border-stone-800">
-                <td className="p-3 font-medium">{b.title}</td>
-                <td className="p-3 text-stone-600 dark:text-stone-400">{b.muhaqqiq}</td>
-                <td className="p-3 text-stone-600 dark:text-stone-400">
+              <TableRow key={b.id}>
+                <TableCell className="font-medium">{b.title}</TableCell>
+                <TableCell className="text-muted-foreground">{b.muhaqqiq}</TableCell>
+                <TableCell className="text-muted-foreground">
                   {editing === b.id ? (
                     <span className="flex gap-2">
-                      <input
+                      <Input
                         value={editionDraft}
                         onChange={(e) => setEditionDraft(e.target.value)}
                         placeholder={b.edition}
-                        className="min-h-[44px] w-40 rounded-lg border border-stone-300 px-2 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-100"
+                        className="w-40"
                         aria-label={t(locale, "manager.edit")}
                       />
                       <Button size="sm" onClick={() => saveEdition(b.id)}>
@@ -102,14 +105,14 @@ export function BooksTable() {
                   ) : (
                     `${b.edition} · ${b.publisher}`
                   )}
-                </td>
-                <td className="p-3">{b.volumes}</td>
-                <td className="p-3">
-                  <Badge className={b.status === "active" ? "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800" : "bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-300 dark:border-red-800"}>
+                </TableCell>
+                <TableCell>{b.volumes}</TableCell>
+                <TableCell>
+                  <Badge variant={b.status === "active" ? "success" : "destructive"}>
                     {t(locale, b.status === "active" ? "manager.status.active" : "manager.status.suspended")}
                   </Badge>
-                </td>
-                <td className="p-3">
+                </TableCell>
+                <TableCell>
                   <span className="flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" onClick={() => toggleStatus(b.id)}>
                       {t(locale, b.status === "active" ? "manager.suspend" : "manager.activate")}
@@ -127,11 +130,11 @@ export function BooksTable() {
                       {t(locale, "manager.edit")}
                     </Button>
                   </span>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

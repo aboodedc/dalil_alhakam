@@ -11,7 +11,7 @@ interface ThemeCtx {
 }
 
 const ThemeContext = createContext<ThemeCtx>({
-  theme: "light",
+  theme: "dark",
   toggle: () => {},
   setTheme: () => {},
 });
@@ -23,10 +23,10 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Always start at "light" so the first client render matches the server HTML.
-  // The real theme (already applied pre-paint by the blocking script) is read
-  // back from the DOM after hydration — no server/client branch, no mismatch.
-  const [theme, setThemeState] = useState<Theme>("light");
+  // Start at "dark" (Participant Guide theme is dark-first). The blocking
+  // script in the root layout already set the correct class pre-paint; state
+  // syncs back from the DOM after hydration — no mismatch.
+  const [theme, setThemeState] = useState<Theme>("dark");
   const skipApply = useRef(true);
 
   // Reflect state changes in the DOM (skipped on mount: the blocking script

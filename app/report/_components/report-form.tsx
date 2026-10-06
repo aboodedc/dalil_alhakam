@@ -8,6 +8,7 @@ import { t } from "@/lib/i18n/dictionaries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label, Select, Textarea, Input } from "@/components/ui/input";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 function ReportFormInner() {
   const { locale } = useLocale();
@@ -49,9 +50,11 @@ function ReportFormInner() {
     <Card>
       <CardContent className="flex flex-col gap-4 pt-5">
         {done ? (
-          <p className="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm font-medium text-emerald-900 dark:bg-emerald-950 dark:border-emerald-800 dark:text-emerald-200" role="status">
-            {t(locale, "report.success")} — SRS §6.2
-          </p>
+          <Alert variant="success" role="status">
+            <AlertDescription>
+              {t(locale, "report.success")} — SRS §6.2
+            </AlertDescription>
+          </Alert>
         ) : (
           <form className="flex flex-col gap-4" onSubmit={onSubmit}>
             <div>
@@ -72,9 +75,9 @@ function ReportFormInner() {
               <Textarea id="details" name="details" required minLength={10} />
             </div>
             {error ? (
-              <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200" role="alert">
-                {error}
-              </p>
+              <Alert variant="destructive" role="alert">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             ) : null}
             <Button type="submit" disabled={sending}>
               {sending ? "…" : t(locale, "report.submit")}

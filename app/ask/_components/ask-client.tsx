@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { BookOpenText, Plus } from "lucide-react";
+import Image from "next/image";
+import { Plus } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult, SourceBook } from "@/types";
@@ -117,9 +118,15 @@ export function AskClient() {
       <div className="flex flex-1 flex-col gap-6 pb-6" aria-live="polite">
         {empty ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10 text-center sm:py-16">
-            <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-700 text-white shadow-lg shadow-emerald-700/20 dark:bg-emerald-600 dark:text-emerald-950">
-              <BookOpenText className="h-8 w-8" />
-            </span>
+            <Image
+              src="/icon_web.png"
+              alt=""
+              aria-hidden
+              width={112}
+              height={112}
+              sizes="(max-width: 640px) 96px, 112px"
+              className="h-24 w-24 rounded-2xl object-contain shadow-lg sm:h-28 sm:w-28"
+            />
             <div className="flex max-w-xl flex-col gap-2">
               <p className="text-xl font-bold leading-8 sm:text-2xl sm:leading-9">
                 {t(locale, "ask.chat.subtitle")}
@@ -133,18 +140,21 @@ export function AskClient() {
 
         {loading ? (
           <div className="flex items-start gap-3" role="status" aria-label={t(locale, "ask.chat.thinking")}>
-            <span
+            <Image
+              src="/icon_web.png"
+              alt=""
               aria-hidden
-              className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white dark:bg-emerald-600 dark:text-emerald-950"
-            >
-              <BookOpenText className="h-4 w-4" />
-            </span>
+              width={36}
+              height={36}
+              sizes="36px"
+              className="mt-1 h-9 w-9 shrink-0 rounded-xl object-contain"
+            />
             <div className="flex items-center gap-2 rounded-2xl rounded-ss-md border border-border bg-card px-4 py-3.5">
               <span className="flex gap-1" aria-hidden>
                 {[0, 1, 2].map((i) => (
                   <span
                     key={i}
-                    className="h-2 w-2 animate-bounce rounded-full bg-emerald-700 dark:bg-emerald-500"
+                    className="h-2 w-2 animate-bounce rounded-full bg-primary"
                     style={{ animationDelay: `${i * 150}ms` }}
                   />
                 ))}

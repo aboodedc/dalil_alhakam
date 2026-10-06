@@ -46,7 +46,7 @@ export function RegisterForm() {
             <Label htmlFor="password">{t(locale, "login.password")}</Label>
             <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={6} />
           </div>
-          {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
+          {error ? <p className="text-sm text-destructive">{error}</p> : null}
           <Button type="submit">{t(locale, "register.title")}</Button>
           <Button type="button" variant="outline" onClick={() => router.push("/ask")}>
             <Globe className="h-4 w-4" />
