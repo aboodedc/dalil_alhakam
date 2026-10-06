@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 20 |
+| ✅ DONE | 21 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -119,6 +119,20 @@
 _No tasks yet._
 
 ### 🔧 Refactoring / Improvement
+
+- [x] ✅ **TASK-022**: Corpus live on Prisma Postgres + remote E2E + LLM hardening
+  - **Priority**: High
+  - **Category**: Refactoring
+  - **SRS Ref**: FR-003, FR-004
+  - **Created**: 2026-10-06
+  - **Completed**: 2026-10-06
+  - **Notes**:
+    - Vercel build fixed: `"postinstall": "prisma generate"` (gitignored `lib/generated/` had no CI step — build failed at `lib/db.ts:2`)
+    - Remote DB = Prisma Postgres: pgvector 0.8.1 ✓, corpus restored from `D:\backup.sql` via Windows psql (`cd bin && ./psql.exe`), 2 books/2,656 rows/2,213 searchable — all embedded; `db:migrate` FORBIDDEN on it (no `_prisma_migrations`)
+    - **Empty search_path gotcha**: pooled connections reject unqualified names → raw SQL schema-qualified (`public."Hadith"`, `OPERATOR(public.<=>)`, `::public.vector`) in retrieval/embed/seed/health
+    - `lib/ai/llm.ts`: 429 single retry + `reasoning` fallback (thinking models leave `content` empty); gemma-4-31b:free persistently rate-limited upstream → `nvidia/nemotron-3-super-120b-a12b:free` (answer+rewriter)
+    - E2E on remote: rewrite ✓ cosine ✓ rerank ✓ persist ✓ cited Arabic answer ✓ ~10s (ultra-550b = better but ~2min > Vercel 60s)
+    - `tsc` ✓ `eslint` ✓; README/docs/.env.example updated to Prisma Postgres + new LLM models
 
 - [x] ✅ **TASK-021**: Ask-page cost display + DB-sourced guarantee + hackathon README
   - **Priority**: High

@@ -82,9 +82,17 @@ async function ollamaChat(
 }
 
 type ChatCompletionResponse = {
-  choices: { message: { content: string | null } }[];
+  choices: {
+    finish_reason?: string | null;
+    message: { content: string | null; reasoning?: string | null };
+  }[];
 };
 
+/** OpenAI-compatible chat call (OpenRouter/SiliconFlow/…).
+ *  - Retries once on 429 (free-tier models get transiently rate-limited upstream).
+ *  - Thinking models (nemotron/ling/lfm…) leave `content` EMPTY and put the
+ *    output in `reasoning` — fall back to it, but ONLY on a clean `stop`
+ *    (on `length` the reasoning is a truncated thinking trace, not an answer). */
 export async function chatCompletion(
   messages: ChatMessage[],
   opts: { temperature?: number; maxTokens?: number; model?: string } = {},
@@ -95,9 +103,8 @@ export async function chatCompletion(
   const ollama = ollamaOrigin(cfg.baseUrl);
   if (ollama) return ollamaChat(ollama, model, messages, opts);
 
-  let res: Response;
-  try {
-    res = await fetch(`${cfg.baseUrl}/chat/completions`, {
+  const doFetch = async (): Promise<Response> =>
+    fetch(`${cfg.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -118,6 +125,15 @@ export async function chatCompletion(
       }),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
+
+  let res: Response;
+  try {
+    res = await doFetch();
+    // One retry on 429 (free-tier upstream rate limits are usually brief).
+    if (res.status === 429) {
+      await new Promise((r) => setTimeout(r, 3000));
+      res = await doFetch();
+    }
   } catch (error) {
     throw new Error(
       `LLM request failed: ${error instanceof Error ? error.message : String(error)}`,
@@ -130,7 +146,13 @@ export async function chatCompletion(
   }
 
   const json = (await res.json()) as ChatCompletionResponse;
-  const content = json.choices?.[0]?.message?.content;
+  const choice = json.choices?.[0];
+  const message = choice?.message;
+  // Thinking models leave `content` empty — their output lands in `reasoning`.
+  // Only trust it on a clean stop; on `length` it is a truncated trace.
+  const content =
+    message?.content?.trim() ||
+    (choice?.finish_reason === "stop" ? message?.reasoning?.trim() : undefined);
   if (!content) {
     throw new Error("LLM returned an empty answer.");
   }

@@ -15,7 +15,7 @@ export async function GET() {
     const [books, hadiths, embedded] = await Promise.all([
       prisma.book.count(),
       prisma.hadith.count({ where: { isHadith: true } }),
-      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*)::bigint AS count FROM "Hadith" WHERE embedding IS NOT NULL`,
+      prisma.$queryRaw<{ count: bigint }[]>`SELECT COUNT(*)::bigint AS count FROM public."Hadith" WHERE embedding IS NOT NULL`,
     ]);
     return NextResponse.json({
       success: true,

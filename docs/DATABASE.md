@@ -2,6 +2,29 @@
 
 PostgreSQL + pgvector, accessed through **Prisma 7** (driver adapter `@prisma/adapter-pg`).
 
+## Production database — Prisma Postgres (2026-10-06)
+
+The corpus is **live on Prisma Postgres** (`pooled.db.prisma.io:5432/postgres`):
+
+- pgvector **0.8.1** enabled (`CREATE EXTENSION vector` — allowed on this host)
+- Restored from a local `pg_dump` (`D:\backup.sql`) via Windows `psql.exe` —
+  **2 books · 2,656 rows · 2,213 searchable · all embedded**
+- ⚠ **Do NOT run `npm run db:migrate` against it** — the schema came from
+  `pg_dump`, not `prisma migrate`, so `_prisma_migrations` is absent and the
+  init migration would collide with the existing tables.
+- ⚠ **Empty `search_path` gotcha**: Prisma Postgres pooled connections have an
+  EMPTY `search_path`, so all raw SQL is **schema-qualified**
+  (`public."Hadith"`, `OPERATOR(public.<=>)`, `::public.vector`) — this is safe
+  on local Postgres too. The `options=-csearch_path` connection-string trick is
+  REJECTED by the pooled proxy.
+- ORM queries (Prisma client) work unqualified as-is.
+
+```bash
+# restore recipe (Windows psql from WSL):
+cd "/mnt/d/Program Files/PostgreSQL/18/bin"
+./psql.exe "postgres://<user>:<pass>@pooled.db.prisma.io:5432/postgres?sslmode=require" -f "D:/backup.sql"
+```
+
 ## The retrieval pipeline (MVP — all-remote via OpenRouter, Vercel-ready)
 
 ```
@@ -152,6 +175,7 @@ npx prisma migrate dev --name <change_name>
 | `RAG_FINAL_K` | Step 4 kept for display | `10` |
 | `RAG_MIN_SCORE` | Hide cutoff (cosine) | `0.30` |
 | `QUERY_REWRITE_ENABLED` | Step 2 always-on switch | `true` |
+| `RAG_ANSWER_ENABLED` | Step 6 LLM summary switch (`false` = hadiths only, no summary) | `true` |
 | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Chat endpoint | `https://openrouter.ai/api/v1` / — / `meta-llama/llama-3.1-8b-instruct` |
 | `LLM_REWRITE_MODEL` | Light rewriter model | `meta-llama/llama-3.1-8b-instruct` |
 | `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME` | OpenRouter attribution headers | `http://localhost:3000` / `Dalil Al-Ahkam` |

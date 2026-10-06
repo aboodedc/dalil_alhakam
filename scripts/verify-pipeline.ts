@@ -10,6 +10,7 @@
 
 import "dotenv/config";
 import { answerQuestion } from "../lib/ai/pipeline";
+import { isAnswerEnabled } from "../lib/ai/providers";
 
 async function main() {
   const q = process.argv[2] ?? "ما هو الدليل على وجوب النية في الوضوء؟";
@@ -30,7 +31,9 @@ async function main() {
     );
   });
 
-  console.log(`\nAnswer:\n${out.answer || "(LLM unavailable — retrieval-only)"}`);
+  console.log(
+    `\nAnswer:\n${out.answer || (isAnswerEnabled() ? "(LLM unavailable — retrieval-only)" : "(disabled — RAG_ANSWER_ENABLED=false, hadiths-only)")}`,
+  );
 }
 
 main()

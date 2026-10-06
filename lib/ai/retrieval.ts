@@ -34,25 +34,27 @@ export async function vectorSearch(
 
   // Only hadiths of ACTIVE books are searchable; optional book scope filter.
   // Note: `$queryRaw` must be called as a tagged template (Prisma 7).
+  // Schema-qualified (`public.` + `OPERATOR(public.<=>)`) so queries also work
+  // on hosts with an empty search_path (e.g. Prisma Postgres pooled connections).
   const rows = opts.bookId
     ? await prisma.$queryRaw<VectorCandidate[]>`
-        SELECT h.id, 1 - (h.embedding <=> ${vectorLiteral}::vector) AS "cosineScore"
-        FROM "Hadith" h
-        JOIN "Book" b ON b.id = h."bookId"
+        SELECT h.id, 1 - (h.embedding OPERATOR(public.<=>) ${vectorLiteral}::public.vector) AS "cosineScore"
+        FROM public."Hadith" h
+        JOIN public."Book" b ON b.id = h."bookId"
         WHERE h.embedding IS NOT NULL
           AND h."isHadith" = TRUE
           AND b.status = 'ACTIVE'
           AND h."bookId" = ${opts.bookId}
-        ORDER BY h.embedding <=> ${vectorLiteral}::vector
+        ORDER BY h.embedding OPERATOR(public.<=>) ${vectorLiteral}::public.vector
         LIMIT ${limit}::int`
     : await prisma.$queryRaw<VectorCandidate[]>`
-        SELECT h.id, 1 - (h.embedding <=> ${vectorLiteral}::vector) AS "cosineScore"
-        FROM "Hadith" h
-        JOIN "Book" b ON b.id = h."bookId"
+        SELECT h.id, 1 - (h.embedding OPERATOR(public.<=>) ${vectorLiteral}::public.vector) AS "cosineScore"
+        FROM public."Hadith" h
+        JOIN public."Book" b ON b.id = h."bookId"
         WHERE h.embedding IS NOT NULL
           AND h."isHadith" = TRUE
           AND b.status = 'ACTIVE'
-        ORDER BY h.embedding <=> ${vectorLiteral}::vector
+        ORDER BY h.embedding OPERATOR(public.<=>) ${vectorLiteral}::public.vector
         LIMIT ${limit}::int`;
 
   return rows;

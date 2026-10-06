@@ -11,7 +11,7 @@
 Generic chatbots **hallucinate hadith texts and rulings** — an unacceptable failure mode for religious sources. Dalil Al-Ahkam solves this with a strict retrieval pipeline:
 
 - **The AI never writes hadiths.** It only reorders database rows and summarizes them. The hadith cards in the UI are verbatim `SELECT` results from PostgreSQL (`lib/ai/pipeline.ts` step 5a).
-- **Real corpus, real citations:** 6 authenticated books (بلوغ المرام، المحرر، المنتقى، نيل الأوطار، العمدة، عمدة الأحكام الكبرى) — 2,661 rows, 2,218 searchable hadiths with volume/page numbers and full sanad chains.
+- **Real corpus, real citations:** authenticated books (المحرر في الحديث، عمدة الأحكام الكبرى) — 2,656 rows, 2,213 searchable hadiths with volume/page numbers and full sanad chains.
 - **Cost-transparent:** every answer displays its estimated USD cost and latency.
 
 ## The pipeline (6 steps, ~$0.002 per request)
@@ -19,19 +19,19 @@ Generic chatbots **hallucinate hadith texts and rulings** — an unacceptable fa
 ```
 [1] User question (Arabic, juristic language)
       │
-[2] Query rewriter — light LLM            OpenRouter  liquid/lfm-2.5-2.6b:free
+[2] Query rewriter — light LLM            OpenRouter  nvidia/nemotron-3-super-120b-a12b:free
       │   long question → short search phrase (falls back to original on failure)
       ▼
 [3] EMBEDDING + cosine search              Cloudflare  @cf/baai/bge-m3 (1024 dims)
-      │   pgvector `<=>` over 2,218 hadiths → top 30 candidates
+      │   pgvector `<=>` over 2,213 hadiths → top 30 candidates
       ▼
 [4] RERANKER vs ORIGINAL question          Cohere      rerank-multilingual-v3.0
       │   → top 10; cosine < 0.30 hidden as irrelevant
       ▼
-[5] DIRECT database fetch                  PostgreSQL + pgvector
+[5] DIRECT database fetch                  Prisma Postgres (pgvector)
       │   text, sanad, hukm, book/volume/page — verbatim rows, never AI text
       ▼
-[6] Grounded summary + [n] citations       OpenRouter  google/gemma-4-31b-it:free
+[6] Grounded summary + [n] citations       OpenRouter  nvidia/nemotron-3-super-120b-a12b:free
       │   answer ONLY from the attached hadiths; missing key → hadiths still shown
       ▼
 [7] Persist run (SearchQuery + SearchResult) → UI shows hadiths, cost, latency
@@ -43,13 +43,13 @@ Graceful degradation at every stage — a missing key or a failing provider neve
 
 | Stage | Model | Price | Typical/request |
 |---|---|---|---|
-| Rewrite | `liquid/lfm-2.5-2.6b:free` | free | $0.00 |
+| Rewrite | `nvidia/nemotron-3-super-120b-a12b:free` | free | $0.00 |
 | Embed | `@cf/baai/bge-m3` | $0.0118 / 1M tok | ~$0.0000002 |
 | Rerank | `rerank-multilingual-v3.0` | $2.00 / 1K searches | $0.0020 |
-| Answer | `google/gemma-4-31b-it:free` | free | $0.00 |
+| Answer | `nvidia/nemotron-3-super-120b-a12b:free` | free | $0.00 |
 | **Total** | | | **≈ $0.002** |
 
-One-time corpus embedding (2,218 hadiths ≈ 0.25M tokens): **≈ $0.003**.
+One-time corpus embedding (2,213 hadiths ≈ 0.25M tokens): **≈ $0.003**.
 
 ## Tech stack
 
@@ -74,7 +74,7 @@ One-time corpus embedding (2,218 hadiths ≈ 0.25M tokens): **≈ $0.003**.
 
 ```bash
 # 1. Install
-npm install
+npm install            # (postinstall runs `prisma generate` for you)
 
 # 2. Configure — fill the THREE keys (see .env.example, every var commented)
 cp .env.example .env
@@ -142,12 +142,15 @@ Optional tuning: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (10) · `RAG_MIN_SCORE` (0
 
 ## Deploying to Vercel
 
-1. Remote Postgres + pgvector (Neon recommended) → `DATABASE_URL`
+1. **Remote database** — the corpus is already live on **Prisma Postgres**
+   (`pooled.db.prisma.io`, pgvector 0.8.1 enabled, restored + embedded
+   2026-10-06): 2 books · 2,656 rows · 2,213 searchable, all embedded.
+   Set that URL as `DATABASE_URL`.
+   ⚠ Do **not** run `npm run db:migrate` against it — the schema was
+   restored via `pg_dump` and has no `_prisma_migrations` history.
 2. Set the three keys + tuning vars in Vercel env settings
-3. `DATABASE_URL=<remote> npm run db:migrate`, then load + embed the corpus
-   (`scripts/sync_shamela.py` or pg_restore, then `npm run db:embed`)
-4. `vercel deploy` — `/api/ask` sets `maxDuration = 60` (Hobby; 300 on Pro)
-5. Nothing else to remember: `postinstall` runs `prisma generate` on every
+3. `vercel deploy` — `/api/ask` sets `maxDuration = 60` (Hobby; 300 on Pro)
+4. Nothing else to remember: `postinstall` runs `prisma generate` on every
    Vercel build (the generated client at `lib/generated/` is gitignored, so
    it must be regenerated in CI)
 
@@ -167,7 +170,7 @@ types/                  # shared TypeScript types
 
 ## Honest limitations (MVP)
 
-- Corpus = 6 books / 2,218 searchable hadiths (extensible via `scripts/sync_shamela.py`)
+- Corpus = 2 books / 2,213 searchable hadiths (extensible via `scripts/sync_shamela.py`)
 - Ratings/reports/folders persist but auth is a UI mock (Google OAuth + TOTP screens only)
 - The AI summary is a convenience; the hadith cards are the source of truth
 

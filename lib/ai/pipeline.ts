@@ -21,7 +21,13 @@ import { vectorSearch } from "@/lib/ai/retrieval";
 import { chatCompletion } from "@/lib/ai/llm";
 import type { ChatMessage } from "@/lib/ai/llm";
 import { rewriteQuery } from "@/lib/ai/query-rewrite";
-import { getEmbeddingConfig, getLlmConfig, getRerankerConfig, isRerankerConfigured } from "@/lib/ai/providers";
+import {
+  getEmbeddingConfig,
+  getLlmConfig,
+  getRerankerConfig,
+  isAnswerEnabled,
+  isRerankerConfigured,
+} from "@/lib/ai/providers";
 import { computeAskCost, type CostReport } from "@/lib/ai/costs";
 import type { HadithResult } from "@/types";
 
@@ -294,9 +300,10 @@ export async function answerQuestion(
     }),
   );
 
-  // Step 3 (LLM answer) — retrieval-only when empty or requested; never throws.
+  // Step 3 (LLM answer) — retrieval-only when empty, requested, or disabled
+  // via RAG_ANSWER_ENABLED=false (hadiths-only mode); never throws.
   let answer = "";
-  if (!opts.retrievalOnly && finalHadiths.length > 0) {
+  if (!opts.retrievalOnly && isAnswerEnabled() && finalHadiths.length > 0) {
     try {
       answer = await chatCompletion(buildMessages(q, finalHadiths), { temperature: 0.2 });
     } catch (error) {

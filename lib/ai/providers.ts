@@ -186,3 +186,13 @@ export function isRewriteEnabled(): boolean {
   const raw = (process.env.QUERY_REWRITE_ENABLED ?? "true").toLowerCase();
   return raw !== "false" && raw !== "0" && raw !== "no";
 }
+
+/**
+ * True when the LLM summary (stage 6) should be generated (default: on).
+ * Set RAG_ANSWER_ENABLED=false for hadiths-only output — the reranked
+ * list is still returned; the rewrite step (stage 2) is unaffected.
+ */
+export function isAnswerEnabled(): boolean {
+  const raw = (process.env.RAG_ANSWER_ENABLED ?? "true").toLowerCase();
+  return raw !== "false" && raw !== "0" && raw !== "no";
+}

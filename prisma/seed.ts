@@ -90,8 +90,9 @@ async function backfillEmbeddings() {
 
   // `embedding` is Unsupported → check for NULLs via raw SQL.
   // Only searchable rows (isHadith = TRUE) need vectors.
+  // Schema-qualified for hosts with an empty search_path (Prisma Postgres).
   const pending = await prisma.$queryRaw<{ id: string; text: string }[]>`
-    SELECT id, text FROM "Hadith" WHERE "isHadith" = TRUE AND embedding IS NULL`;
+    SELECT id, text FROM public."Hadith" WHERE "isHadith" = TRUE AND embedding IS NULL`;
   if (pending.length === 0) {
     console.log("✔ All hadiths already have BGE-M3 embeddings");
     return;
@@ -106,7 +107,7 @@ async function backfillEmbeddings() {
     for (let j = 0; j < batch.length; j++) {
       const vectorLiteral = `[${vectors[j].join(",")}]`;
       await prisma.$executeRaw`
-        UPDATE "Hadith" SET embedding = ${vectorLiteral}::vector WHERE id = ${batch[j].id}`;
+        UPDATE public."Hadith" SET embedding = ${vectorLiteral}::public.vector WHERE id = ${batch[j].id}`;
     }
     console.log(`✔ Embedded ${Math.min(i + BATCH, pending.length)}/${pending.length}`);
   }

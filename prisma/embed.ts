@@ -40,14 +40,15 @@ async function main() {
 
   if (RESET) {
     // Re-embed everything: the corpus must match the query embedding provider.
+    // Schema-qualified for hosts with an empty search_path (Prisma Postgres).
     const cleared = await prisma.$executeRaw`
-      UPDATE "Hadith" SET embedding = NULL WHERE "isHadith" = TRUE`;
+      UPDATE public."Hadith" SET embedding = NULL WHERE "isHadith" = TRUE`;
     console.log(`→ Cleared ${cleared} existing embedding(s) — re-embedding with the current provider`);
   }
 
   // `embedding` is Unsupported → check for NULLs via raw SQL (tagged template, Prisma 7).
   const pending = await prisma.$queryRaw<{ id: string; text: string }[]>`
-    SELECT id, text FROM "Hadith"
+    SELECT id, text FROM public."Hadith"
     WHERE "isHadith" = TRUE AND embedding IS NULL
     ORDER BY seq`;
   if (pending.length === 0) {
@@ -62,7 +63,7 @@ async function main() {
     for (let j = 0; j < batch.length; j++) {
       const vectorLiteral = `[${vectors[j].join(",")}]`;
       await prisma.$executeRaw`
-        UPDATE "Hadith" SET embedding = ${vectorLiteral}::vector WHERE id = ${batch[j].id}`;
+        UPDATE public."Hadith" SET embedding = ${vectorLiteral}::public.vector WHERE id = ${batch[j].id}`;
     }
     console.log(`✔ Embedded ${Math.min(i + BATCH, pending.length)}/${pending.length}`);
   }
