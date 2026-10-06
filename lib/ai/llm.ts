@@ -36,7 +36,7 @@ async function ollamaChat(
   origin: string,
   model: string,
   messages: ChatMessage[],
-  opts: { temperature?: number; maxTokens?: number },
+  opts: { temperature?: number; maxTokens?: number; signal?: AbortSignal },
 ): Promise<string> {
   const body = {
     model,
@@ -58,7 +58,11 @@ async function ollamaChat(
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(attempt),
-        signal: AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
+        // Caller's signal (e.g. a tighter per-feature timeout) combined with
+        // the built-in Ollama timeout — whichever fires first aborts.
+        signal: opts.signal
+          ? AbortSignal.any([AbortSignal.timeout(OLLAMA_TIMEOUT_MS), opts.signal])
+          : AbortSignal.timeout(OLLAMA_TIMEOUT_MS),
       });
     } catch (error) {
       throw new Error(
@@ -95,13 +99,19 @@ type ChatCompletionResponse = {
  *    (on `length` the reasoning is a truncated thinking trace, not an answer). */
 export async function chatCompletion(
   messages: ChatMessage[],
-  opts: { temperature?: number; maxTokens?: number; model?: string } = {},
+  opts: { temperature?: number; maxTokens?: number; model?: string; signal?: AbortSignal } = {},
 ): Promise<string> {
   const cfg = getLlmConfig();
   const model = opts.model ?? cfg.model;
 
   const ollama = ollamaOrigin(cfg.baseUrl);
   if (ollama) return ollamaChat(ollama, model, messages, opts);
+
+  // Caller's signal (e.g. a tighter per-feature timeout) combined with the
+  // built-in request timeout — whichever fires first aborts.
+  const signal = opts.signal
+    ? AbortSignal.any([AbortSignal.timeout(REQUEST_TIMEOUT_MS), opts.signal])
+    : AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
   const doFetch = async (): Promise<Response> =>
     fetch(`${cfg.baseUrl}/chat/completions`, {
@@ -123,7 +133,7 @@ export async function chatCompletion(
         temperature: opts.temperature ?? 0.2,
         max_tokens: opts.maxTokens ?? 2048,
       }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      signal,
     });
 
   let res: Response;

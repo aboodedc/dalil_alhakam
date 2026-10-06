@@ -175,6 +175,7 @@ npx prisma migrate dev --name <change_name>
 | `RAG_FINAL_K` | Step 4 kept for display | `10` |
 | `RAG_MIN_SCORE` | Hide cutoff (cosine) | `0.30` |
 | `QUERY_REWRITE_ENABLED` | Step 2 always-on switch | `true` |
+| `QUERY_REWRITE_MIN_LENGTH` | Min chars before rewrite LLM is called (`0` = always send to AI) | `24` |
 | `RAG_ANSWER_ENABLED` | Step 6 LLM summary switch (`false` = hadiths only, no summary) | `true` |
 | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | Chat endpoint | `https://openrouter.ai/api/v1` / — / `meta-llama/llama-3.1-8b-instruct` |
 | `LLM_REWRITE_MODEL` | Light rewriter model | `meta-llama/llama-3.1-8b-instruct` |

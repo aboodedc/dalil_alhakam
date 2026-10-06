@@ -188,6 +188,17 @@ export function isRewriteEnabled(): boolean {
 }
 
 /**
+ * Minimum question length (in chars) that triggers the LLM rewrite.
+ * Default 24 when unset/invalid. Set `QUERY_REWRITE_MIN_LENGTH=0` to
+ * always send to the AI, even for tiny questions.
+ */
+export function getRewriteMinLength(): number {
+  const raw = Number.parseInt(process.env.QUERY_REWRITE_MIN_LENGTH ?? "", 10);
+  if (Number.isNaN(raw)) return 24;
+  return Math.max(0, raw);
+}
+
+/**
  * True when the LLM summary (stage 6) should be generated (default: on).
  * Set RAG_ANSWER_ENABLED=false for hadiths-only output — the reranked
  * list is still returned; the rewrite step (stage 2) is unaffected.

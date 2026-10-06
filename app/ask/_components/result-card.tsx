@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bookmark, Download, FileText, Flag, Star } from "lucide-react";
+import { Bookmark, Download, FileText, Flag, ScrollText, Star } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
@@ -11,6 +11,7 @@ import { getFolders, getRatings, saveToFolder, setRating } from "@/lib/workspace
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { HadithDetailDialog } from "./hadith-detail-dialog";
 
 interface ResultCardProps {
   result: HadithResult;
@@ -26,6 +27,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   const { locale } = useLocale();
   const [rating, setR] = useState(() => getRatings()[result.id] ?? 0);
   const [saved, setSaved] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const citation = formatCitation({
     bookTitle: result.bookTitle,
     edition: result.edition,
@@ -77,9 +79,15 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
             {result.bookTitle} · ج{result.volume} ص{result.page} · #{result.hadithNumber}
           </span>
         </div>
-        <p className="pt-1 text-[15px] leading-8 break-words" dir="rtl">
+        <button
+          type="button"
+          onClick={() => setDetailsOpen(true)}
+          title={t(locale, "ask.details.open")}
+          className="cursor-pointer rounded-lg pt-1 text-start text-[15px] leading-8 break-words hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-700"
+          dir="rtl"
+        >
           {result.text}
-        </p>
+        </button>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-[13px] leading-6 break-words text-muted-foreground">{citation}</p>
@@ -124,6 +132,10 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <Button size="sm" variant="outline" onClick={() => setDetailsOpen(true)}>
+            <ScrollText className="h-4 w-4" />
+            {t(locale, "ask.details.open")}
+          </Button>
           <Button size="sm" variant={saved ? "secondary" : "outline"} onClick={onSave}>
             <Bookmark className="h-4 w-4" />
             {t(locale, "ask.save")}
@@ -170,6 +182,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
           </span>
         </div>
       </CardContent>
+      <HadithDetailDialog result={result} open={detailsOpen} onOpenChange={setDetailsOpen} />
     </Card>
   );
 }

@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 21 |
+| ✅ DONE | 22 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -119,6 +119,20 @@
 _No tasks yet._
 
 ### 🔧 Refactoring / Improvement
+
+- [x] ✅ **TASK-023**: Click hadith → sanad + hukm + source dialog with AI fallback
+  - **Priority**: High
+  - **Category**: Feature
+  - **SRS Ref**: FR-003, FR-004, FR-005
+  - **Created**: 2026-10-06
+  - **Completed**: 2026-10-06
+  - **Notes**:
+    - Clicking a hadith (text or «السند والحكم» button on `result-card.tsx`) opens `hadith-detail-dialog.tsx` showing ONLY المصدر + السند + الحكم (صحيح/حسن/ضعيف/موضوع…); mobile bottom-sheet → centered dialog on sm+, Escape/backdrop close, RTL
+    - New `GET /api/hadiths/[id]` (`maxDuration = 60`): DB sanad/hukm/alternatives + book source verbatim; real Shamela-synced rows have `sanad=[]`/`hukm=""` → LLM estimates via `lib/ai/hadith-details.ts` (strict JSON, hukm allowlist, never persisted to DB) with `aiGenerated: true`; LLM failure → DB partial + `aiError` (UI shows «تعذّر التوليد الآلي»)
+    - AI estimates labeled «تقدير آلي — ليس حكماً شرعياً» (hackathon transparency rule); i18n keys `ask.details.*` (ar/en)
+    - 3s AI cap (2026-10-06 follow-up): `HADITH_DETAILS_TIMEOUT_MS` (default 3000) aborts the fallback via `AbortController` (`chatCompletion`/`ollamaChat` accept `signal`, combined with built-in timeouts via `AbortSignal.any`); on timeout the dialog shows «لم يتم العثور…» (`ask.details.timeout`, `timedOut: true`)
+    - Session cache (2026-10-06 follow-up): module-level `Map` (cap 100) in `hadith-detail-dialog.tsx` — reopening the same hadith reuses the result with no refetch; error/timeout partials are NOT cached so reopen retries; refresh clears it (accepted)
+    - Verified: `tsc` ✓ `lint` ✓ `next build` ✓; live E2E on Windows-host DB (404 ✓, real row → graceful `aiError` partial — free-pool LLMs 429/empty upstream at test time)
 
 - [x] ✅ **TASK-022**: Corpus live on Prisma Postgres + remote E2E + LLM hardening
   - **Priority**: High

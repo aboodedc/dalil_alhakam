@@ -50,6 +50,7 @@
 
 ### Backend API — MVP (2026-10-04)
 - `POST /api/ask` `{question, bookId (id|slug), userId?}` → `{queryId, rewrittenQuery, answer, hadiths[10], droppedCount, latencyMs, cost}` — `cost` = per-stage USD estimate (`lib/ai/costs.ts`, TASK-021)
+- `GET /api/hadiths/[id]` (2026-10-06, TASK-023) → `{sanad, hukm, scholar, alternatives, source, aiGenerated, missingFromDb}` — DB verbatim; Shamela rows have `sanad=[]`/`hukm=""` → transient LLM estimate (`lib/ai/hadith-details.ts`, strict JSON + hukm allowlist, NEVER persisted); UI labels it «تقدير آلي — ليس حكماً شرعياً». AI capped at 3s (`HADITH_DETAILS_TIMEOUT_MS`, aborted via signal → `timedOut: true` = «not found»); dialog caches clean results in-memory (session-only, refresh clears)
 - `GET /api/books` (DB, mock fallback) · `GET /api/health` (DB + providers + corpus)
 - `POST /api/ratings` · `POST /api/reports` · `GET /api/history` · `GET/POST /api/folders` · `PATCH /api/manager/books` (books-only scope)
 - Ask/manager/workspace/report pages wired to these endpoints with offline/mock fallbacks
