@@ -1,7 +1,7 @@
 # 🧠 Important — Project Memory
 
 > This file is the AI's memory. Read it at the start of every conversation.
-> Last updated: 2026-10-06
+> Last updated: 2026-11-09
 
 ---
 
@@ -55,6 +55,21 @@
 - `GET /api/books` (DB, mock fallback) · `GET /api/health` (DB + providers + corpus)
 - `POST /api/ratings` · `POST /api/reports` · `GET /api/history` · `GET/POST /api/folders` · `PATCH /api/manager/books` (books-only scope)
 - Ask/manager/workspace/report pages wired to these endpoints with offline/mock fallbacks
+
+### Class & Sequence Diagram Alignment (2026-11-09)
+- **Source of truth**: `class-diagram.png` + `secunce digram for software enginering full (1).jpg` (12 flows: Login, Make Report, Ask, View Sanad/Hukm, View History, Register, Request Source, Export Results, Folder, Reset Password, Modify Sources, Manage Accounts). Implemented DB + API + UI end-to-end — no diagram flow left as a mock.
+- **Auth (no new deps)**: passwords = Node `crypto.scrypt` (`lib/auth/password.ts`); stateless sessions = HMAC-SHA256 `<base64url(payload)>.<base64url(sig)>` (`lib/auth/token.ts`, 7-day TTL). Token returned as `200 OK + token` AND set as HttpOnly `dalil_token` cookie. Bearer also accepted. `lib/auth/session.ts`: `readSession`, `getSessionUser`, `isTokenEnough`, `isManagerOrAdmin`, `isAdmin`.
+- **Roles**: `UserRole = USER | MANAGER | ADMIN`. Role-gated APIs: `/api/manager/books`, `/api/accounts*`, `/api/reports/[id]`, `/api/sources?all=true`. Current-user API: `/api/me`.
+- **New Prisma models** (migration `20261109000000_diagram_alignment`): `SourceRequest` + `SourceRequestStatus`, `PasswordResetToken` (1-hour, single-use); `SearchResult.summary` added for the Ask flow's answer stage; User relations to sources/reset tokens. Run `npm run db:migrate` before using these flows — `prisma generate` alone does NOT update the DB.
+- **New APIs**: `/api/login`, `/api/register`, `/api/logout`, `/api/me`, `/api/reset-request`, `/api/reset-password`, `/api/report` (alias of `/api/reports`), `/api/reports/[id]` (PATCH resolve/dismiss), `/api/sources` (GET/POST), `/api/sources/[id]` (PATCH), `/api/accounts` (GET), `/api/accounts/role` (PATCH), `/api/accounts/[id]` (DELETE), `/api/history/[id]` (GET full result set).
+- **Diagram-compatible field aliases**: `/api/ask` accepts `message`/`scopeBook` as well as `question`/`bookId`; `/api` responses keep old fields so existing UI keeps working. `SearchResult.summary` stores the query answer when `RAG_ANSWER_ENABLED=true`; `citation` is emitted for View Sanad/Hukm. `/api/reports` returns `reportId` in addition to `id` (diagram: `rp: reportInfo with reportId`).
+- **Class-named service layer** (`lib/services/*`, barrel `lib/services/index.ts`): `setBookStatus` (Book), `getCitation` (Hadith), `register`/`login`/`askQuestion`/`rateHadith`/`reportHadith` (User), `createFolder`/`addHadith` (Folder), `getResults` (SearchQuery), `resolveReport`/`dismissReport` (Report), `submitSourceRequest`/`reviewSourceRequest` (SourceRequest). API routes call these, so every class-diagram method exists by name in source (not just conceptually).
+- **Export Results flow**: `lib/export-results.ts` (`enrichHadith` → `createFile` → `exportResults`) builds the full result set and triggers a txt/JSON download from the workspace/ask UI.
+- **Email/reset**: `lib/email.ts` sends via Resend when `RESEND_API_KEY` is set; otherwise logs the link (and `devResetLink` is returned outside production unless `EMAIL_DEBUG=false`).
+- **Demo accounts**: `prisma/demo-users.ts` + `npm run db:demo-users` → `admin@dalil.local / Admin123!` (ADMIN), `manager@dalil.local / Manager123!` (MANAGER). Overridable via `SEED_*` env vars.
+- **Environment additions**: `AUTH_SECRET` (required in production; dev fallback warns), `RESEND_API_KEY`, `EMAIL_FROM`, `EMAIL_DEBUG`, `SEED_ADMIN_*`, `SEED_MANAGER_*` — documented in `.env.example`.
+- **UI**: real login/register + forgot/reset password pages; header session state + logout; `/sources` request page; manager tabs Books/Accounts/Source Requests (Accounts admin-only); workspace history/folders + export; `authFetch` clears stored auth on 401.
+- Verified 2026-11-09: `npx tsc --noEmit`, `npm run lint`, `npm run build` all clean (34 routes). DB migration/application still pending wherever the database has not been migrated.
 
 ### Path Alias
 - `@/*` maps to `./*` (project root) — defined in `tsconfig.json`
@@ -133,6 +148,10 @@
 - **2026-10-06 false alarm**: user reported "LLM broken" — root cause was the REMOTE Prisma Postgres unreachable from WSL (TCP 5432 timeout, `ETIMEDOUT` in `vectorSearch`), not the LLM (verified working via direct curl). `lib/ai/llm.ts` hardened anyway: `reasoning` fallback now gated on `finish_reason === "stop"` (on `length` it is a truncated thinking trace, not an answer).
 - **2026-10-06 second ETIMEDOUT (Windows `next dev`)**: `.env` had been flipped to the WSL host IP `172.28.32.1` — from Windows that address is the WSL virtual NIC, NOT local Postgres → 21s timeouts on `/api/books` + `/api/ask`. RULE: **`.env` keeps `localhost:5432` (Windows dev is primary)**; WSL script runs prefix the override: `DATABASE_URL=postgresql://postgres:aboodandabood@172.28.32.1:5432/dalil_al_ahkam npx tsx scripts/...`. Never commit the host IP as the default again.
 - **`db:seed` is dangerous on the real corpus** (mock rows share `(book, hadithNumber)` with real rows) — now guarded: skips mock upsert when a real corpus is detected. Use **`npm run db:embed`** for embeddings-only backfill.
+- **2026-11-09 — diagram migration applied + WSL/Windows split (important)**: Postgres runs on **Windows**, while the agent shell is **WSL Linux**. WSL `localhost:5432` is NOT the Windows Postgres. The local `dalil_al_ahkam` DB had no `_prisma_migrations` history (P3005), so the first two migrations were baselined via `prisma migrate resolve --applied` (`20261002000000_init`, `20261004000001_hadith_split`) after verifying `isHadith`/`seq` existed and the new objects did not; then `20261109000000_diagram_alignment` was deployed. Corpus intact: 2 books / 2,656 hadiths. Demo users seeded.
+  - **Run Prisma/npm from Windows PowerShell** for localhost DB access, or from WSL invoke Windows interop: `powershell.exe -NoProfile -Command "Set-Location 'D:\Projects\dalil-al-ahkam-hakthon'; npm run db:migrate"`.
+  - Direct SQL from WSL: use the Windows client `/mnt/d/Program Files/PostgreSQL/18/bin/psql.exe` with `-h localhost` and `PGPASSWORD` passed through `WSLENV=PGPASSWORD` (plain env vars are not inherited by Windows executables).
+  - WSL-native `npm run dev` only works if `.env` points at a reachable host IP (e.g. `172.28.32.1`) AND Windows Postgres allows that connection (`listen_addresses` + `pg_hba.conf`). Keep `.env` at `localhost:5432` for Windows dev (primary); override per-command for WSL runs.
 
 ---
 
@@ -142,6 +161,23 @@
 - **Date**: 2026-10-01
 - **Context**: User requested all designs be responsive on all screen sizes
 - **Detail**: Created `.agents/skills/responsive-design/SKILL.md`. Every UI must be mobile-first (base styles for 360px, then sm/md/lg/xl), use fluid containers `max-w-7xl`, logical RTL properties (`ms/me/ps/pe`), 44px touch targets, stepped typography. Verify at 360/768/1024/1440px with no horizontal overflow.
+
+### Ask chat — entrance animation & scroll anchor (2026-11-10)
+- **Context**: User wants new answers to appear smoothly from top to bottom and the viewport to land on the beginning of the answer, not the end of the thread.
+- **Detail**:
+  - `app/globals.css` defines `.chat-enter` (`@keyframes chat-enter`: 12px rise + fade, 0.45s) and disables it under `prefers-reduced-motion`.
+  - `chat-message.tsx` animates the question, answer, evidence cards (staggered), error and empty state. On mount it scrolls to `[data-scroll-target]`: the LLM answer card if `turn.answer` exists, otherwise the first hadith card (error/empty state as final fallbacks), offset by the live sticky-header height.
+  - `ask-client.tsx` only scrolls to the thinking row while `loading` — never to `bottomRef` after the answer arrives.
+  - Do not reintroduce a blanket `bottomRef.scrollIntoView` on `turns` changes in `ask-client.tsx`; it overrides the answer anchor.
+
+### Ask loading — staged "heavy work" panel (2026-11-11)
+- **Context**: User wants the loading state to feel like a large multi-stage retrieval job is running (search, embedding, models, verification), not a generic spinner.
+- **Detail**:
+  - `app/ask/_components/thinking-panel.tsx` renders a 6-stage pipeline card: query rewrite → bge-m3 embedding → pgvector scan → rerank → DB verbatim verification → citations, with a live timer, `n/6` counter, shimmer progress bar and a rolling fake processing log (2,656 hadiths / 2 books numbers are real).
+  - Timing is deliberately fake and front-loaded (`STAGE_DELAYS_MS` etc.) for the ~5s request; the panel disappears when the API resolves. Keep the last stage active + "waiting" if the request runs longer.
+  - The whole visual panel is `aria-hidden`; a single `sr-only` `role="status"` announces the active stage, and `prefers-reduced-motion` disables all animation (`.thinking-shimmer`, `animate-ping/spin/pulse`).
+  - `ask-client.tsx` scrolls to `[data-thinking-panel]`'s top (offset by sticky header) when `loading` flips true — do not restore the old `bottomRef` scroll, it hides the pipeline header.
+  - Display is purely cosmetic — it must NOT pretend to stream real backend progress; no request data is wired into the stage timing.
 
 ---
 

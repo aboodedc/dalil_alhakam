@@ -14,6 +14,7 @@
     "db:migrate": "prisma migrate deploy",
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
+    "db:demo-users": "tsx prisma/demo-users.ts",
     "db:embed": "tsx prisma/embed.ts",
     "db:reembed": "tsx prisma/embed.ts --reset",
     "db:studio": "prisma studio"

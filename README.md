@@ -69,8 +69,11 @@ One-time corpus embedding (2,213 hadiths ≈ 0.25M tokens): **≈ $0.003**.
 - 🤖 Hadiths-only by default (`RAG_ANSWER_ENABLED=false`) — no AI summary box; set `true` for a grounded summary with [n] citations
 - 🧾 Result cards: rank, topic, hadith text, citation, **sanad chain visual**, hukm + scholar, alternative rulings, PDF link, txt export
 - ⭐ 5-star relevance rating · 🔖 save to folders · 🚩 report a wrong result
-- 🗂️ Workspace: search history + saved hadiths (server + localStorage)
-- 🛠️ Manager page: activate/suspend books, update editions
+- 🗂️ Workspace: search history + saved hadiths (server + localStorage) · delete a history entry · export full results (txt/JSON)
+- 🔐 Real auth: register/login/logout, scrypt password hashing, HMAC session tokens (cookie + bearer), password reset by email
+- 👥 Roles: `USER` / `MANAGER` / `ADMIN` — manager page gates books, accounts and source-request review by role
+- 📥 Source requests: any user can request a new source; managers resolve/dismiss them
+- 🛠️ Manager page: activate/suspend books, update editions, manage accounts + roles, review source requests
 - 📊 Report page + `GET /api/health` (DB + providers + corpus status)
 
 ## Quick start
@@ -95,7 +98,10 @@ npm run db:migrate       # apply migrations
 # 5. Embed the corpus with the SAME provider as the queries
 npm run db:embed
 
-# 6. Run
+# 6. Demo roles (ADMIN/MANAGER) for the manager/source-request flows
+npm run db:demo-users    # admin@dalil.local / Admin123! · manager@dalil.local / Manager123!
+
+# 7. Run
 npm run dev              # → http://localhost:3000
 ```
 
@@ -119,6 +125,15 @@ Everything is documented inline in **[`.env.example`](./.env.example)** — the 
 
 Optional: `OPENROUTER_API_KEY` fills any empty `*_API_KEY` if you switch a base URL back to OpenRouter.
 
+Auth (optional in dev, **required in production**):
+
+| Variable | Purpose |
+|---|---|
+| `AUTH_SECRET` | HMAC key for session tokens (random string ≥ 16 chars; dev fallback warns) |
+| `RESEND_API_KEY` / `EMAIL_FROM` | password-reset email (without a key the link is logged to the server console) |
+| `EMAIL_DEBUG` | include `devResetLink` in reset-request responses outside production |
+| `SEED_ADMIN_*` / `SEED_MANAGER_*` | credentials used by `npm run db:demo-users` |
+
 Tuning defaults: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (3) · `RAG_MIN_SCORE` (0.40) · `QUERY_REWRITE_ENABLED` (true) · `QUERY_REWRITE_MIN_LENGTH` (0 = always rewrite) · `RAG_ANSWER_ENABLED` (**false = hadiths-only**) · `COST_*` price overrides.
 
 ## npm scripts
@@ -131,6 +146,7 @@ Tuning defaults: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (3) · `RAG_MIN_SCORE` (0.
 | `npm run db:seed` | mock corpus (auto-skips if a real corpus exists) |
 | `npm run db:embed` | backfill BGE-M3 embeddings (NULL rows only) |
 | `npm run db:reembed` | **reset + re-embed all** — REQUIRED after any embedding-provider switch |
+| `npm run db:demo-users` | create/refresh demo `ADMIN` + `MANAGER` accounts |
 | `npm run db:studio` | browse data in Prisma Studio |
 | `npm run lint` | ESLint |
 
@@ -138,12 +154,24 @@ Tuning defaults: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (3) · `RAG_MIN_SCORE` (0.
 
 | Method | Route | Purpose |
 |---|---|---|
-| `POST` | `/api/ask` | `{question, bookId?, userId?}` → answer + top-3 hadiths + cost + latency |
+| `POST` | `/api/ask` | `{question\|message, bookId\|scopeBook, userId?}` → answer + top-3 hadiths + summary/citation + cost + latency |
 | `GET` | `/api/books` | book list for the scope filter |
 | `GET` | `/api/health` | DB + providers + corpus health |
-| `POST` | `/api/ratings` · `/api/reports` | 5-star rating · report a bad result |
-| `GET` | `/api/history` · `GET/POST /api/folders` | workspace data |
-| `PATCH` | `/api/manager/books` | book status/edition updates |
+| `GET` | `/api/hadiths/[id]` | sanad + hukm + citation details (`isAi`, `citation`) |
+| `POST` | `/api/register` · `/api/login` · `/api/logout` | auth — `200 OK + token` (also sets `dalil_token` cookie) |
+| `GET` | `/api/me` | current session user + role |
+| `POST` | `/api/reset-request` · `/api/reset-password` | Reset Password sequence (1-hour token) |
+| `POST` | `/api/ratings` | 5-star rating (session-aware, one row per user/hadith) |
+| `POST` | `/api/reports` · `/api/report` | report a bad result (alias kept for the Make Report diagram) |
+| `PATCH` | `/api/reports/[id]` | resolve/dismiss a report (manager/admin) |
+| `GET` | `/api/history` · `/api/history/[id]` | search history + full result set (session) |
+| `GET` · `POST` | `/api/folders` | folders + saved hadiths (session) |
+| `POST` · `GET` | `/api/sources` | submit a source request · list (`?all=true` = manager/admin) |
+| `PATCH` | `/api/sources/[id]` | resolve/dismiss a source request (manager/admin) |
+| `PATCH` | `/api/manager/books` | book status/edition updates (manager/admin) |
+| `GET` | `/api/accounts` | list accounts (admin) |
+| `PATCH` | `/api/accounts/role` | change a user role (admin) |
+| `DELETE` | `/api/accounts/[id]` | delete an account (admin) |
 
 ## Deploying to Vercel
 
@@ -167,8 +195,10 @@ Full guide: **[`docs/DATABASE.md`](./docs/DATABASE.md)**
 app/                    # App Router pages (+ _components per page) + api routes
 components/             # ui primitives · common · layout
 lib/ai/                 # pipeline · providers · costs · embed/rerank · llm · rewrite
-lib/                    # i18n · workspace (folders/history) · mock · utils
-prisma/                 # schema · migrations · seed · embed
+lib/auth/               # scrypt passwords · HMAC tokens · session/role helpers
+lib/services/           # class-diagram methods (setBookStatus, getCitation, register, login, askQuestion, createFolder, addHadith, getResults, rateHadith, reportHadith, resolve/dismiss, source requests)
+lib/                    # i18n · workspace (folders/history) · export · email · mock · utils
+prisma/                 # schema · migrations · seed · embed · demo-users
 scripts/                # sync_shamela.py (corpus) · verify-pipeline.ts · verify-cloudflare-embed.ts
 types/                  # shared TypeScript types
 ```
@@ -176,7 +206,8 @@ types/                  # shared TypeScript types
 ## Honest limitations (MVP)
 
 - Corpus = 2 books / 2,213 searchable hadiths (extensible via `scripts/sync_shamela.py`)
-- Ratings/reports/folders persist but auth is a UI mock (Google OAuth + TOTP screens only)
+- Auth is real (scrypt + HMAC sessions) but Google OAuth and TOTP are still UI mocks
+- Password reset needs `RESEND_API_KEY` to actually send email; otherwise the link is console-only
 - The AI summary is a convenience; the hadith cards are the source of truth
 
 ---

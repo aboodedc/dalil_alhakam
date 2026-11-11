@@ -20,6 +20,8 @@ export const MOCK_HADITHS: HadithResult[] = [
     relevance: 0.94,
     pdfUrl: "#/scans/bulugh-v1-p42.pdf",
     topic: "الطهارة — الاستنشار",
+    summary: "",
+    citation: "بلوغ المرام من أدلة الأحكام، تحقيق حلاق، الطبعة الأولى، ج1، ص42، حديث رقم 112",
   },
   {
     id: "h2",
@@ -37,6 +39,8 @@ export const MOCK_HADITHS: HadithResult[] = [
     relevance: 0.91,
     pdfUrl: "#/scans/umda-v1-p18.pdf",
     topic: "النية والإخلاص",
+    summary: "",
+    citation: "عمدة الأحكام، تحقيق الأرناؤوط، الطبعة الثانية، ج1، ص18، حديث رقم 7",
   },
   {
     id: "h3",
@@ -56,6 +60,8 @@ export const MOCK_HADITHS: HadithResult[] = [
     relevance: 0.87,
     pdfUrl: "#/scans/bulugh-v1-p88.pdf",
     topic: "البدع والأحكام المستحدثة",
+    summary: "",
+    citation: "بلوغ المرام من أدلة الأحكام، تحقيق حلاق، الطبعة الأولى، ج1، ص88، حديث رقم 204",
   },
   {
     id: "h4",
@@ -75,6 +81,8 @@ export const MOCK_HADITHS: HadithResult[] = [
     relevance: 0.83,
     pdfUrl: "#/scans/muntaqa-v1-p156.pdf",
     topic: "القضاء والبينات",
+    summary: "",
+    citation: "المنتقى من أحاديث الأحكام، تحقيق الأرناؤوط، الطبعة الثالثة، ج1، ص156، حديث رقم 321",
   },
   {
     id: "h5",
@@ -92,6 +100,8 @@ export const MOCK_HADITHS: HadithResult[] = [
     relevance: 0.79,
     pdfUrl: "#/scans/umda-v1-p64.pdf",
     topic: "الإجارة وحقوق العمال",
+    summary: "",
+    citation: "عمدة الأحكام، تحقيق الأرناؤوط، الطبعة الثانية، ج1، ص64، حديث رقم 58",
   },
 ];
 

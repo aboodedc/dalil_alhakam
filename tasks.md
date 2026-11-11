@@ -1,6 +1,6 @@
 # 📋 Project Tasks — Dalil Al-Ahkam
 
-> Last updated: 2026-10-06
+> Last updated: 2026-11-11
 
 ---
 
@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 23 |
+| ✅ DONE | 26 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -62,6 +62,30 @@
   - **Created**: 2026-10-01
   - **Completed**: 2026-10-01
   - **Notes**: Skill at `.agents/skills/responsive-design/SKILL.md`
+
+- [x] ✅ **TASK-025**: Ask page — smooth entrance animation + scroll anchor to answer or first hadith
+  - **Priority**: Medium
+  - **Category**: UI
+  - **Created**: 2026-11-10
+  - **Completed**: 2026-11-10
+  - **Notes**:
+    - `app/globals.css`: `chat-enter` keyframes — items rise 12px into place with a fade (0.45s); disabled under `prefers-reduced-motion`
+    - `chat-message.tsx`: question, answer, evidence cards, errors and empty state animate in; evidence cards stagger by index
+    - Scroll anchor: newest turn scrolls to the LLM answer card, or the first hadith when no answer exists (also error/empty state), offset below the sticky header; never the thread bottom
+    - `ask-client.tsx` keeps scrolling to the thinking row only while a request is in flight
+    - Verified: `npx tsc --noEmit`, `npx eslint`, `npm run build` — all clean
+
+- [x] ✅ **TASK-026**: Ask page — multi-stage "heavy work" loading panel
+  - **Priority**: Medium
+  - **Category**: UI
+  - **Created**: 2026-11-11
+  - **Completed**: 2026-11-11
+  - **Notes**:
+    - New `app/ask/_components/thinking-panel.tsx`: 6-stage pipeline (query rewrite → embedding → pgvector scan → rerank → DB verification → citations) with live timer, stage counter, shimmering progress bar and a rolling processing log
+    - Progress/stage timing is front-loaded fake timing for a ~5s request; the panel unmounts when the API responds
+    - Decorative visuals are `aria-hidden`; a single `sr-only` `role="status"` announces the active stage; all animation respects `prefers-reduced-motion`
+    - `ask-client.tsx` scrolls to the panel top (not the thread bottom) when loading starts; i18n keys added in AR + EN
+    - Verified at 390px mobile, dark + light, AR + EN; no horizontal overflow, no console errors
 
 ### ⚙️ Features
 
@@ -271,6 +295,26 @@ _No tasks yet._
     - Regenerated `prisma/migrations/20261002000000_init/migration.sql` (offline `migrate diff`, pgvector `CREATE EXTENSION` header kept)
     - Updated: `types/index.ts`, `lib/mock/books.ts` + `hadiths.ts` (English values deleted), `prisma/seed.ts` (embeds Arabic `text` only), `lib/ai/pipeline.ts` (Arabic-only LLM context + rerank input), `lib/utils.ts` (`formatCitationEn` removed), UI components (`corpus-preview`, `result-card`, `query-form`, `books-table`, `workspace-client`)
     - Verified: `prisma generate`, `npx tsc --noEmit`, `npm run lint` clean
+
+- [x] ✅ **TASK-024**: Align the whole app with the class + 12 sequence diagrams (auth, roles, sources, reset, export, history)
+  - **Priority**: High
+  - **Category**: Feature
+  - **SRS Ref**: FR-001–FR-008
+  - **Created**: 2026-11-09
+  - **Completed**: 2026-11-09
+  - **Notes**:
+    - Implemented all 12 diagram flows end-to-end (DB + API + UI): Login, Make Report, Ask, View Sanad/Hukm, View History, Register, Request Source, Export Results, Folder, Reset Password, Modify Sources, Manage Accounts
+    - Auth without new dependencies: Node `crypto.scrypt` password hashing + HMAC-SHA256 session tokens; HttpOnly cookie + bearer; `200 OK + token`; 7-day TTL; role helpers (`USER`/`MANAGER`/`ADMIN`)
+    - Schema: `SourceRequest` + `SourceRequestStatus`, `PasswordResetToken` (1-hour single-use), `SearchResult.summary`, User/Book relations — migration `20261109000000_diagram_alignment` (⚠ must run `npm run db:migrate`; `prisma generate` does not update the DB)
+    - APIs added: `/api/login`, `/api/register`, `/api/logout`, `/api/me`, `/api/reset-request`, `/api/reset-password`, `/api/report`, `/api/reports/[id]`, `/api/sources`, `/api/sources/[id]`, `/api/accounts`, `/api/accounts/role`, `/api/accounts/[id]`, `/api/history/[id]`; updated ask/folders/history/ratings/reports/manager books/hadiths
+    - `/api/ask` accepts diagram aliases (`message`/`scopeBook`); pipeline persists `summary` and emits `citation`; `lib/export-results.ts` implements `enrichHadith` → `createFile` → `exportResults`
+    - Class-named service layer `lib/services/*`: `setBookStatus`, `getCitation`, `register`, `login`, `askQuestion`, `createFolder`, `addHadith`, `getResults`, `rateHadith`, `reportHadith`, `resolveReport`, `dismissReport`, `submitSourceRequest`, `reviewSourceRequest` — routes call these so diagram methods exist by name
+    - UI: real login/register, forgot/reset password pages, auth-aware header/logout, `/sources` request page, manager tabs Books/Accounts/Source Requests, workspace history + export, save-to-folder, report flow; `authFetch` clears stale auth on 401
+    - Demo accounts: `prisma/demo-users.ts` + `npm run db:demo-users` (`admin@dalil.local / Admin123!`, `manager@dalil.local / Manager123!`)
+    - Docs: `.env.example` (auth/email/demo vars), README (features, scripts, API table, limitations), `important.md` (alignment section)
+    - Verified: `npx tsc --noEmit`, `npm run lint`, `npm run build` clean — 34 routes generated
+    - **DB applied 2026-11-09**: local Windows Postgres had no migration history (P3005); baselined `20261002000000_init` + `20261004000001_hadith_split` after schema verification, then deployed `20261109000000_diagram_alignment`. Corpus intact (2 books / 2,656 hadiths). `prisma migrate status` = up to date. Demo users created via `npm run db:demo-users`.
+    - **WSL/Windows note**: Postgres runs on Windows; run Prisma/npm via Windows PowerShell or `powershell.exe` interop from WSL. `psql.exe` from WSL needs `-h localhost` + `WSLENV=PGPASSWORD`.
 
 ---
 

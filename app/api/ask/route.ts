@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { answerQuestion } from "@/lib/ai/pipeline";
 import { parseAskBody } from "@/lib/validations/ask";
+import { isTokenEnough, readSession } from "@/lib/auth/session";
+import { askQuestion } from "@/lib/services";
 
 /**
  * POST /api/ask — the 6-step RAG flow:
@@ -15,6 +16,14 @@ import { parseAskBody } from "@/lib/validations/ask";
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  // Ask sequence: isTokenEnough() → alt [isNotEnoughToken] Error not enough token
+  if (!(await isTokenEnough(request))) {
+    return NextResponse.json(
+      { success: false, error: "Error: not enough token" },
+      { status: 401 },
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();
@@ -52,9 +61,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const out = await answerQuestion(parsed.question, {
+    // Authenticated users always own the saved query; anonymous demo calls
+    // may still pass an explicit userId (backwards compatible).
+    const session = await readSession(request);
+    const userId = session.user?.id ?? parsed.userId;
+
+    // User.askQuestion(question, bookId)
+    const out = await askQuestion(parsed.question, {
       bookId,
-      userId: parsed.userId,
+      userId,
       retrievalOnly: parsed.retrievalOnly,
     });
     return NextResponse.json({ success: true, data: out });

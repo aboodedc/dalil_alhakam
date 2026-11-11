@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Bookmark, Download, FileText, Flag, ScrollText, Star } from "lucide-react";
+import { Bookmark, Download, FileText, ScrollText, Star } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
 import { formatCitation, cn } from "@/lib/utils";
-import { getFolders, getRatings, saveToFolder, setRating } from "@/lib/workspace";
+import { getRatings, saveToFolder, setRating } from "@/lib/workspace";
+import { authFetch } from "@/lib/auth-client";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HadithDetailDialog } from "./hadith-detail-dialog";
+import { ReportDialog } from "./report-dialog";
 
 interface ResultCardProps {
   result: HadithResult;
@@ -43,21 +44,40 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
     hadithNumber: result.hadithNumber,
   });
 
-  function onSave() {
-    const folders = getFolders();
-    saveToFolder(folders[0]?.id ?? "default", result.id);
+  async function onSave() {
     setSaved(true);
-    fetch("/api/folders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ folderId: folders[0]?.id, hadithId: result.id }),
-    }).catch(() => {});
+    try {
+      // Folder sequence: GET /api/folders → optionally create → insert hadith.
+      const listRes = await authFetch("/api/folders");
+      const listJson = (await listRes.json()) as { success: boolean; data?: { id: string }[] };
+      let folderId = listJson.success ? listJson.data?.[0]?.id : undefined;
+
+      if (!folderId) {
+        const createRes = await authFetch("/api/folders", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: locale === "ar" ? "عام" : "General" }),
+        });
+        const created = (await createRes.json()) as { success: boolean; data?: { id: string } };
+        folderId = created.success ? created.data?.id : undefined;
+      }
+      if (!folderId) return;
+
+      await authFetch("/api/folders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderId, hadithId: result.id }),
+      });
+      saveToFolder(folderId, result.id);
+    } catch {
+      // Local storage already marked it saved; the next sync retries server-side.
+    }
   }
 
   function onRate(stars: number) {
     setR(stars);
     setRating(result.id, stars);
-    fetch("/api/ratings", {
+    authFetch("/api/ratings", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ hadithId: result.id, stars, queryId: queryId ?? null }),
@@ -162,13 +182,11 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
               {t(locale, "ask.pdf")}
             </a>
           ) : null}
-          <Link
-            href={queryId ? `/report?hadith=${result.id}&query=${queryId}` : `/report?hadith=${result.id}`}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground hover:bg-muted"
-          >
-            <Flag className="h-4 w-4" />
-            {t(locale, "ask.report")}
-          </Link>
+          <ReportDialog
+            hadithId={result.id}
+            hadithLabel={`#${result.hadithNumber} · ${result.bookTitle}`}
+            queryId={queryId}
+          />
           <span className="ms-auto flex items-center gap-0.5" role="group" aria-label={t(locale, "ask.rate")}>
             {[1, 2, 3, 4, 5].map((s) => (
               <button

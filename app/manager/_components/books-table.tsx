@@ -6,6 +6,7 @@ import type { SourceBook } from "@/types";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import { MOCK_BOOKS } from "@/lib/mock/books";
+import { authFetch } from "@/lib/auth-client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,13 +39,19 @@ export function BooksTable() {
 
   async function persist(bookId: string, patch: { status?: string; edition?: string }) {
     setNotice(null);
-    const res = await fetch("/api/manager/books", {
+    const res = await authFetch("/api/manager/books", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ bookId, ...patch }),
     });
     if (!res.ok) {
-      setNotice(ar ? "تعذّر الحفظ في قاعدة البيانات — طُبّق محلياً فقط." : "DB save failed — applied locally only.");
+      setNotice(
+        res.status === 403
+          ? t(locale, "manager.forbidden")
+          : ar
+            ? "تعذّر الحفظ في قاعدة البيانات — طُبّق محلياً فقط."
+            : "DB save failed — applied locally only.",
+      );
     }
   }
 

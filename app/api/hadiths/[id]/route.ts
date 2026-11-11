@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { estimateHadithDetails } from "@/lib/ai/hadith-details";
+import { getCitation } from "@/lib/services";
 
 /**
  * GET /api/hadiths/[id] — sanad + hukm + source for one hadith.
@@ -68,7 +69,7 @@ export async function GET(
   }
 
   if (!row) {
-    return NextResponse.json({ success: false, error: "Hadith not found." }, { status: 404 });
+    return NextResponse.json({ success: false, error: "Hadith not found" }, { status: 404 });
   }
 
   const dbSanad: string[] = Array.isArray(row.sanad) ? row.sanad : [];
@@ -85,6 +86,14 @@ export async function GET(
     hadithNumber: row.hadithNumber,
     pdfUrl: row.pdfUrl ?? row.book.pdfUrl ?? "#",
   };
+  // Hadith.getCitation()
+  const citation = getCitation({
+    bookTitle: row.book.title,
+    edition: row.book.edition ?? "",
+    volume: row.volume,
+    page: row.page,
+    hadithNumber: row.hadithNumber,
+  });
 
   // Complete in the DB — no AI needed.
   if (!missingSanad && !missingHukm) {
@@ -101,8 +110,10 @@ export async function GET(
           scholar: a.scholar ?? "",
         })),
         source,
+        citation,
         topic: row.topic ?? "",
         aiGenerated: false,
+        isAi: false,
         missingFromDb: { sanad: false, hukm: false },
       },
     });
@@ -134,8 +145,10 @@ export async function GET(
           scholar: a.scholar ?? "",
         })),
         source,
+        citation,
         topic: row.topic ?? "",
         aiGenerated: true,
+        isAi: true,
         timedOut: false,
         missingFromDb: { sanad: missingSanad, hukm: missingHukm },
       },
@@ -157,8 +170,10 @@ export async function GET(
           scholar: a.scholar ?? "",
         })),
         source,
+        citation,
         topic: row.topic ?? "",
         aiGenerated: false,
+        isAi: false,
         aiError: true,
         timedOut,
         missingFromDb: { sanad: missingSanad, hukm: missingHukm },

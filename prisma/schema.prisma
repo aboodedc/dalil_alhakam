@@ -35,16 +35,17 @@ model Book {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  hadiths Hadith[]
-  queries SearchQuery[]
+  hadiths        Hadith[]
+  queries        SearchQuery[]
+  sourceRequests SourceRequest[]
 }
 
 model Hadith {
-  id           String  @id @default(cuid())
+  id           String   @id @default(cuid())
   bookId       String
-  book         Book    @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book         Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
   hadithNumber String // e.g. "112" — unique within a book
-  volume       Int     @default(1)
+  volume       Int      @default(1)
   page         Int
   text         String
   sanad        String[] // سند chain (narrators, companion → collector)
@@ -52,8 +53,8 @@ model Hadith {
   scholar      String? // scholar of the primary hukm
   topic        String?
   pdfUrl       String? // scan page for citation
-  isHadith     Boolean @default(false) // false = section/front-matter row, excluded from hadith search/compare
-  seq          Int     @default(0) // order within book, for ±N context windows
+  isHadith     Boolean  @default(false) // false = section/front-matter row, excluded from hadith search/compare
+  seq          Int      @default(0) // order within book, for ±N context windows
 
   /// BGE-M3 embedding (1024 dims) — written/read via raw SQL (pgvector),
   /// not exposed through Prisma Client. Cosine search: embedding <=> $1::vector
@@ -73,11 +74,11 @@ model Hadith {
 
 /// Alternative scholarly hukm for the same hadith (e.g. الألباني: صحيح)
 model HadithHukmAlternative {
-  id        String  @id @default(cuid())
-  hadithId  String
-  hadith    Hadith  @relation(fields: [hadithId], references: [id], onDelete: Cascade)
-  hukm      String
-  scholar   String?
+  id       String  @id @default(cuid())
+  hadithId String
+  hadith   Hadith  @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  hukm     String
+  scholar  String?
 
   @@index([hadithId])
 }
@@ -101,10 +102,12 @@ model User {
   totpEnabled  Boolean  @default(false) // manager/admin 2FA flag (SRS)
   createdAt    DateTime @default(now())
 
-  folders Folder[]
-  queries SearchQuery[]
-  ratings Rating[]
-  reports Report[]
+  folders        Folder[]
+  queries        SearchQuery[]
+  ratings        Rating[]
+  reports        Report[]
+  sourceRequests SourceRequest[]
+  resetTokens    PasswordResetToken[]
 }
 
 enum ReportStatus {
@@ -130,16 +133,16 @@ model Report {
 }
 
 model Rating {
-  id        String      @id @default(cuid())
+  id        String       @id @default(cuid())
   userId    String?
-  user      User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
   hadithId  String
-  hadith    Hadith      @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  hadith    Hadith       @relation(fields: [hadithId], references: [id], onDelete: Cascade)
   queryId   String?
   query     SearchQuery? @relation(fields: [queryId], references: [id], onDelete: SetNull)
   stars     Int // 1..5 (SRS 5-star rating on results)
   comment   String?
-  createdAt DateTime    @default(now())
+  createdAt DateTime     @default(now())
 
   @@unique([userId, hadithId, queryId])
 }
@@ -156,13 +159,13 @@ model Folder {
 }
 
 model SavedHadith {
-  id        String   @id @default(cuid())
-  folderId  String
-  folder    Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
-  hadithId  String
-  hadith    Hadith   @relation(fields: [hadithId], references: [id], onDelete: Cascade)
-  note      String?
-  savedAt   DateTime @default(now())
+  id       String   @id @default(cuid())
+  folderId String
+  folder   Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  hadithId String
+  hadith   Hadith   @relation(fields: [hadithId], references: [id], onDelete: Cascade)
+  note     String?
+  savedAt  DateTime @default(now())
 
   @@unique([folderId, hadithId])
 }
@@ -200,6 +203,47 @@ model SearchResult {
   rank        Int // 1 = best after rerank
   cosineScore Float // stage 1: BGE-M3 cosine similarity
   rerankScore Float? // stage 2: BGE-Reranker-v2-m3 relevance score
+  summary     String? // optional per-result summary (class diagram: SearchResult.summary)
 
   @@unique([queryId, hadithId])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Source requests (Request Source sequence) + password reset
+// ─────────────────────────────────────────────────────────────
+
+enum SourceRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// A user's request to add a new source/book that is not in the corpus yet.
+model SourceRequest {
+  id         String              @id @default(cuid())
+  userId     String?
+  user       User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title      String
+  edition    String?
+  status     SourceRequestStatus @default(PENDING)
+  bookId     String?
+  book       Book?               @relation(fields: [bookId], references: [id], onDelete: SetNull)
+  reviewedAt DateTime?
+  createdAt  DateTime            @default(now())
+
+  @@index([status, createdAt])
+  @@index([userId])
+}
+
+/// Single-use, hashed password-reset token (Reset Password sequence).
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

@@ -8,6 +8,7 @@ import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import { MOCK_HADITHS } from "@/lib/mock/hadiths";
 import { createFolder, getFolders, getHistory } from "@/lib/workspace";
+import { authFetch } from "@/lib/auth-client";
 import { PageHeader } from "@/components/common/page-header";
 import { EmptyState } from "@/components/common/empty-state";
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ export function WorkspaceClient() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional post-hydration sync with localStorage; reading it during render would cause a hydration mismatch
     setFolders(getFolders());
     setHistory(getHistory());
-    fetch("/api/history?limit=20")
+    authFetch("/api/history?limit=20")
       .then((r) => r.json())
       .then((j) => {
         if (cancelled || !j?.success || !Array.isArray(j.data)) return;
@@ -55,7 +56,7 @@ export function WorkspaceClient() {
         });
       })
       .catch(() => {});
-    fetch("/api/folders")
+    authFetch("/api/folders")
       .then((r) => r.json())
       .then((j) => {
         if (cancelled || !j?.success || !Array.isArray(j.data) || j.data.length === 0) return;
@@ -69,7 +70,7 @@ export function WorkspaceClient() {
 
   function onCreateFolder(name: string) {
     setFolders(createFolder(name));
-    fetch("/api/folders", {
+    authFetch("/api/folders", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name }),
@@ -110,9 +111,16 @@ export function WorkspaceClient() {
                 <CardContent className="flex flex-col gap-2">
                   {f.itemIds.map((id) => {
                     const h = MOCK_HADITHS.find((m) => m.id === id);
+                    const saved = f.items?.find((m) => m.hadithId === id);
+                    const text = saved?.text ?? h?.text;
+                    const number = saved?.hadithNumber ?? h?.hadithNumber;
                     return (
                       <p key={id} className="rounded-xl bg-muted p-2 text-sm leading-6" dir="rtl">
-                        {h ? `${h.text.slice(0, 90)}… · #${h.hadithNumber}` : ar ? `حديث محفوظ: ${id}` : `Saved: ${id}`}
+                        {text
+                          ? `${text.slice(0, 90)}…${number ? ` · #${number}` : ""}`
+                          : ar
+                            ? `حديث محفوظ: ${id}`
+                            : `Saved: ${id}`}
                       </p>
                     );
                   })}

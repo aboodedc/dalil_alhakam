@@ -8,10 +8,12 @@ import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult, SourceBook } from "@/types";
 import type { CostReport } from "@/lib/ai/costs";
 import { pushHistory } from "@/lib/workspace";
+import { authFetch } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { QueryForm } from "./query-form";
 import { ClarificationBanner } from "./clarification-banner";
 import { ChatMessage, type ChatTurn } from "./chat-message";
+import { ThinkingPanel } from "./thinking-panel";
 
 type AskApiData = {
   queryId: string;
@@ -44,9 +46,22 @@ export function AskClient() {
     };
   }, []);
 
+  // While the request is in flight, land on the top of the thinking panel so
+  // the pipeline stages are visible from the start. Once the turn arrives,
+  // ChatMessage scrolls to the answer itself (or the first hadith when there
+  // is no answer) — never to the bottom of the thread.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [turns, loading]);
+    if (!loading) return;
+    const frame = requestAnimationFrame(() => {
+      const target = document.querySelector<HTMLElement>("[data-thinking-panel]");
+      if (!target) return;
+      const headerHeight = document.querySelector("header")?.getBoundingClientRect().height ?? 0;
+      const top = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      window.scrollTo({ top: Math.max(top, 0), behavior: reduceMotion ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading]);
 
   const activeSources = books.filter((b) => b.status === "active").length;
   const empty = turns.length === 0 && !loading;
@@ -57,10 +72,11 @@ export function AskClient() {
     setInput("");
     setLoading(true);
     try {
-      const res = await fetch("/api/ask", {
+      const res = await authFetch("/api/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, bookId: scope }),
+        // Ask sequence names: message + scopeBook (aliases accepted by the API).
+        body: JSON.stringify({ message: question, scopeBook: scope }),
       });
       const json = (await res.json()) as { success: boolean; data?: AskApiData; error?: string };
       if (!res.ok || !json.success || !json.data) {
@@ -138,31 +154,7 @@ export function AskClient() {
           turns.map((turn) => <ChatMessage key={turn.id} turn={turn} onRetry={(q) => submit(q)} />)
         )}
 
-        {loading ? (
-          <div className="flex items-start gap-3" role="status" aria-label={t(locale, "ask.chat.thinking")}>
-            <Image
-              src="/icon_web.png"
-              alt=""
-              aria-hidden
-              width={36}
-              height={36}
-              sizes="36px"
-              className="mt-1 h-9 w-9 shrink-0 rounded-xl object-contain"
-            />
-            <div className="flex items-center gap-2 rounded-2xl rounded-ss-md border border-border bg-card px-4 py-3.5">
-              <span className="flex gap-1" aria-hidden>
-                {[0, 1, 2].map((i) => (
-                  <span
-                    key={i}
-                    className="h-2 w-2 animate-bounce rounded-full bg-primary"
-                    style={{ animationDelay: `${i * 150}ms` }}
-                  />
-                ))}
-              </span>
-              <span className="text-sm text-muted-foreground">{t(locale, "ask.chat.thinking")}</span>
-            </div>
-          </div>
-        ) : null}
+        {loading ? <ThinkingPanel /> : null}
         <div ref={bottomRef} />
       </div>
 

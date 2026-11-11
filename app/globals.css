@@ -142,3 +142,52 @@ body {
     0 1px 0 rgba(46, 242, 194, 0.08),
     0 12px 32px -16px rgba(46, 242, 194, 0.22);
 }
+
+/* New chat items rise into place (up → down) with a soft fade. */
+@keyframes chat-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-enter {
+  animation: chat-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chat-enter {
+    animation: none;
+  }
+}
+
+/* Ask page "heavy work" indicator — moving shimmer on the pipeline bar. */
+@keyframes thinking-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.thinking-shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--primary) 0%,
+    color-mix(in oklab, var(--primary) 45%, var(--card)) 45%,
+    var(--primary) 100%
+  );
+  background-size: 200% 100%;
+  animation: thinking-shimmer 1.6s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .thinking-shimmer {
+    animation: none;
+  }
+}

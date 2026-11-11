@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { isManagerOrAdmin, readSession } from "@/lib/auth/session";
+import { setBookStatus } from "@/lib/services";
 
 /**
  * PATCH /api/manager/books — manager scope = books only (TASK-008):
  * {bookId (id or slug), status?: "ACTIVE"|"SUSPENDED", edition?: string}
  */
 export async function PATCH(request: NextRequest) {
+  // Modify Sources sequence: checkRole(ADMIN, MANAGER)
+  const session = await readSession(request);
+  if (!isManagerOrAdmin(session.user)) {
+    return NextResponse.json(
+      { success: false, error: "Forbidden — ADMIN or MANAGER role required." },
+      { status: 403 },
+    );
+  }
+
   let body: Record<string, unknown>;
   try {
     body = (await request.json()) as Record<string, unknown>;
@@ -29,18 +39,11 @@ export async function PATCH(request: NextRequest) {
   }
 
   try {
-    const book = await prisma.book.findFirst({
-      where: { OR: [{ id: body.bookId }, { slug: body.bookId }] },
-      select: { id: true },
-    });
-    if (!book) {
-      return NextResponse.json({ success: false, error: "Unknown book." }, { status: 404 });
+    // Book.setBookStatus()
+    const updated = await setBookStatus(body.bookId, data);
+    if (!updated) {
+      return NextResponse.json({ success: false, error: "Unknown book" }, { status: 404 });
     }
-    const updated = await prisma.book.update({
-      where: { id: book.id },
-      data,
-      select: { id: true, slug: true, status: true, edition: true },
-    });
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {
     console.error("PATCH /api/manager/books failed:", error);

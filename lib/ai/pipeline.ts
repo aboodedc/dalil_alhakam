@@ -29,6 +29,7 @@ import {
   isRerankerConfigured,
 } from "@/lib/ai/providers";
 import { computeAskCost, type CostReport } from "@/lib/ai/costs";
+import { formatCitation } from "@/lib/utils";
 import type { HadithResult } from "@/types";
 
 function intEnv(name: string, fallback: number, min: number, max: number): number {
@@ -148,6 +149,14 @@ function toHadithResult(h: HadithRow, relevance: number): HadithResult {
     relevance,
     pdfUrl: h.pdfUrl ?? h.book.pdfUrl ?? "#",
     topic: h.topic ?? "",
+    summary: "",
+    citation: formatCitation({
+      bookTitle: h.book.title,
+      edition: h.book.edition ?? "",
+      volume: h.volume,
+      page: h.page,
+      hadithNumber: h.hadithNumber,
+    }),
   };
 }
 
@@ -312,6 +321,12 @@ export async function answerQuestion(
     }
   }
 
+  // SearchResult.summary is the per-result summary column; when the summary
+  // stage is enabled the query answer is stored on each ranked result.
+  if (answer) {
+    for (const hadith of finalHadiths) hadith.summary = answer;
+  }
+
   const latencyMs = Date.now() - startedAt;
 
   // Per-request USD cost estimate (embed / rewrite / rerank / answer lines).
@@ -341,6 +356,7 @@ export async function answerQuestion(
             rank: i + 1,
             cosineScore: h.cosineScore,
             rerankScore: h.rerankScore,
+            summary: h.summary || null,
           })),
         },
       },

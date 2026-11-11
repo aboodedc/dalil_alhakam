@@ -16,13 +16,16 @@ export function parseAskBody(body: unknown): ParsedAsk | { error: string } {
   }
   const b = body as Record<string, unknown>;
 
-  const question = typeof b.question === "string" ? b.question.trim() : "";
-  if (!question) return { error: "question is required." };
+  // Ask sequence uses `message` / `scopeBook`; the existing UI uses
+  // `question` / `bookId`. Accept both shapes.
+  const rawQuestion = b.question ?? b.message;
+  const question = typeof rawQuestion === "string" ? rawQuestion.trim() : "";
+  if (!question) return { error: "question (or message) is required." };
   if (question.length > MAX_QUESTION_CHARS) {
     return { error: `question is too long (max ${MAX_QUESTION_CHARS} chars).` };
   }
 
-  const rawScope = b.bookId ?? b.bookScope ?? "all";
+  const rawScope = b.bookId ?? b.bookScope ?? b.scopeBook ?? "all";
   const bookScope =
     typeof rawScope === "string" && rawScope !== "" && rawScope !== "all" ? rawScope : null;
 
