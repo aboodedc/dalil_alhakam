@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Download, FileText, ScrollText, Star } from "lucide-react";
+import { Bookmark, Download, FileText, LibraryBig, ScrollText, Star } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HadithDetailDialog } from "./hadith-detail-dialog";
+import { ShamelaDialog } from "./shamela-dialog";
 import { ReportDialog } from "./report-dialog";
 
 interface ResultCardProps {
@@ -36,6 +37,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   }, [result.id]);
   const [saved, setSaved] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [shamelaOpen, setShamelaOpen] = useState(false);
   const citation = formatCitation({
     bookTitle: result.bookTitle,
     edition: result.edition,
@@ -108,12 +110,18 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
         </div>
         <button
           type="button"
-          onClick={() => setDetailsOpen(true)}
-          title={t(locale, "ask.details.open")}
-          className="cursor-pointer rounded-lg pt-1 text-start text-[15px] leading-8 break-words hover:bg-muted/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          onClick={() => setShamelaOpen(true)}
+          title={t(locale, "ask.shamela.open")}
+          className="group mt-1 flex w-full cursor-pointer flex-col gap-1.5 rounded-xl border border-border bg-card p-3 text-start transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           dir="rtl"
         >
-          {result.text}
+          <span className="text-[15px] leading-8 font-normal break-words text-foreground">
+            {result.text}
+          </span>
+          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
+            <LibraryBig className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t(locale, "ask.shamela.hint")}
+          </span>
         </button>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -208,6 +216,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
         </div>
       </CardContent>
       <HadithDetailDialog result={result} open={detailsOpen} onOpenChange={setDetailsOpen} />
+      <ShamelaDialog result={result} open={shamelaOpen} onOpenChange={setShamelaOpen} />
     </Card>
   );
 }

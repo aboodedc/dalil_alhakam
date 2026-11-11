@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 26 |
+| ✅ DONE | 28 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -86,6 +86,29 @@
     - Decorative visuals are `aria-hidden`; a single `sr-only` `role="status"` announces the active stage; all animation respects `prefers-reduced-motion`
     - `ask-client.tsx` scrolls to the panel top (not the thread bottom) when loading starts; i18n keys added in AR + EN
     - Verified at 390px mobile, dark + light, AR + EN; no horizontal overflow, no console errors
+
+- [x] ✅ **TASK-027**: Click hadith → Shamela popup with the original page in an embedded frame
+  - **Priority**: High
+  - **Category**: UI
+  - **Created**: 2026-11-11
+  - **Completed**: 2026-11-11
+  - **Notes**:
+    - `app/ask/_components/shamela-dialog.tsx`: dialog with the DB hadith inside a strong bordered quote (the requested "border around the hadith"), citation, and the matching Shamela reader page in an iframe + external-open link
+    - `app/api/shamela/route.ts`: derives the Shamela book id from `Book.id` (`shamela-b<id>`), maps stored volume + printed page → Shamela internal page id via `ajax/pagenum2id`, caches results, and returns book/search fallbacks when unmapped
+    - Hadith text in `result-card.tsx` is now a bordered, clickable block with a "view on Shamela" hint; the old details dialog remains on the "السند والحكم" button
+    - Verified live: hadith #774 → `shamela.ws/book/1088/546`, hadith 67-2 → `shamela.ws/book/11194/240#p1` (later corrected to 241 by TASK-028); iframe renders, AR/EN + light/dark, mobile and desktop, no console errors
+
+- [x] ✅ **TASK-028**: Resolve Shamela page by in-book search + public MCP, not just the stored page mapping
+  - **Priority**: High
+  - **Category**: UI
+  - **Created**: 2026-11-11
+  - **Completed**: 2026-11-11
+  - **Notes**:
+    - `/api/shamela` now tries three resolvers in order: (1) `POST https://shamela.ws/ajax/search` with `books[]=<bookId>` and validates the first result snippet against the hadith text; (2) MCP `shamela_find` at `https://mcp.shamela.ws` (free, no key) and scores `evidence.sources` page text; (3) `ajax/pagenum2id` mapping as the final fallback
+    - Text matching normalizes Arabic diacritics/honorifics, unifies alef/ya/ta-marbuta, drops stop words, and requires ≥45% of the hadith's opening distinctive words on the candidate page — prevents adjacent-page/false hits
+    - Fixed the known bad row: 67-2 ("كانت صلاة رسول الله قصدًا…") now resolves to `book/11194/241#p1` instead of 240; #774 still resolves to `book/1088/546#p1`
+    - Sampled 12 rows across both books; 11 exact page matches (score 1.0) and one long hadith starting on the returned page (0.67, continues on the next page). MCP was exercised on the long row where search did not return a hit
+    - Live popup verified: click hadith → `https://shamela.ws/book/11194/241#p1` inside the dialog iframe, no console errors; mobile layout intact
 
 ### ⚙️ Features
 
