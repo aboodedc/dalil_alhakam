@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { HadithDetailDialog } from "./hadith-detail-dialog";
 import { ShamelaDialog } from "./shamela-dialog";
 import { ReportDialog } from "./report-dialog";
+import { ExportDialog } from "./export/export-dialog";
 
 interface ResultCardProps {
   result: HadithResult;
@@ -38,6 +39,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   const [saved, setSaved] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shamelaOpen, setShamelaOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const citation = formatCitation({
     bookTitle: result.bookTitle,
     edition: result.edition,
@@ -87,13 +89,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   }
 
   function onExport() {
-    const blob = new Blob([`${citation}\n\n${result.text}`], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `hadith-${result.hadithNumber}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    setExportOpen(true);
   }
 
   return (
@@ -115,7 +111,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
           className="group mt-1 flex w-full cursor-pointer flex-col gap-1.5 rounded-xl border border-border bg-card p-3 text-start transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           dir="rtl"
         >
-          <span className="text-[15px] leading-8 font-normal break-words text-foreground">
+          <span className="font-naskh text-[15px] leading-8 font-normal break-words text-foreground">
             {result.text}
           </span>
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground transition-colors group-hover:text-primary">
@@ -217,6 +213,11 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
       </CardContent>
       <HadithDetailDialog result={result} open={detailsOpen} onOpenChange={setDetailsOpen} />
       <ShamelaDialog result={result} open={shamelaOpen} onOpenChange={setShamelaOpen} />
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        hadiths={[result]}
+      />
     </Card>
   );
 }

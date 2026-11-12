@@ -1,6 +1,6 @@
 # 📋 Project Tasks — Dalil Al-Ahkam
 
-> Last updated: 2026-11-11
+> Last updated: 2026-11-12
 
 ---
 
@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 28 |
+| ✅ DONE | 30 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -109,6 +109,39 @@
     - Fixed the known bad row: 67-2 ("كانت صلاة رسول الله قصدًا…") now resolves to `book/11194/241#p1` instead of 240; #774 still resolves to `book/1088/546#p1`
     - Sampled 12 rows across both books; 11 exact page matches (score 1.0) and one long hadith starting on the returned page (0.67, continues on the next page). MCP was exercised on the long row where search did not return a hit
     - Live popup verified: click hadith → `https://shamela.ws/book/11194/241#p1` inside the dialog iframe, no console errors; mobile layout intact
+
+- [x] ✅ **TASK-029**: Shamela popup — show only book content, hide site header/sidebar/footer
+  - **Priority**: High
+  - **Category**: UI
+  - **Created**: 2026-11-11
+  - **Completed**: 2026-11-11
+  - **Notes**:
+    - New `app/api/shamela/page/route.ts` (`/api/shamela/page?book=&page=`): fetches `https://shamela.ws/ajax/pageContent/<book>/<pageId>` JSON and returns a standalone HTML document containing only `.nass` (book text + footnotes)
+    - Removes Shamela's header, chapter sidebar, page navigation, search controls, footer, scripts and event handlers; hides copy buttons; rewrites root-relative URLs; serves with a restrictive CSP and `frame-ancestors 'self'`
+    - `/api/shamela` now returns both `url` (canonical Shamela page for the external link) and `embedUrl` (clean same-origin proxy); the dialog iframe uses `embedUrl`
+    - Added Arabic/English typography fallbacks (`Noto Naskh Arabic`, `Amiri`, `Traditional Arabic`) and mobile sizing; footnotes are styled as a compact `.hamesh` block
+    - Verified: proxy contains hadith 67-2 and #774 with no `#header`, `.s-nav`, `#footer` or nav controls; live popup iframe is same-origin, clean, no console errors, mobile layout intact
+
+- [x] ✅ **TASK-030**: Sanad tree/graph + designed PDF / Word / Excel / image export
+  - **Priority**: High
+  - **Category**: Feature
+  - **Created**: 2026-11-12
+  - **Completed**: 2026-11-12
+  - **Notes**:
+    - **Sanad tree**: `lib/sanad.ts` (Arabic normalisation, explicit-chain cleaning, conservative matn-chain extraction, `resolveSanad`, `chunkText`) + `app/ask/_components/sanad-graph.tsx` (alternating tree: Prophet ﷺ root → numbered narrator nodes → matn card, source badge, copy action). Wired into the hadith details dialog (`max-w-4xl`).
+    - **Corpus reality**: every synced Shamela row has an empty `sanad`/`hukm`, so the tree falls back to the narrators literally named at the start of the matn and labels them "مستخرج من نص الحديث"; an AI estimate from `/api/hadiths/[id]` keeps the "estimate, not a ruling" disclaimer.
+    - **Export stack**: `html-to-image` + `pdf-lib` + `docx` + `write-excel-file/browser`; modules in `lib/export/*`, UI in `app/ask/_components/export/*`.
+    - **Image export**: 4 designed templates (`midnight`, `manuscript`, `emerald`, `minimal`) × 3 sizes (portrait 1080×1350, square 1080×1080, story 1080×1920), live preview, PNG download, Web Share (fallback: download + WhatsApp link), copy text.
+    - **PDF export**: A4 cover page (question, counts, sources, date) + one page per hadith, continuation pages for long texts (2200 chars/page), page numbering, capture at 2× (1588×2246 px).
+    - **Word export**: editable RTL document — header band, question box, a shaded card per hadith (matn in Naskh, sanad chain, hukm, citation) + footer with page fields.
+    - **Excel export**: two sheets — a styled RTL table (frozen header, wrapped text, row heights, sanad/hukm/relevance columns) and a file-info sheet.
+    - **Integration**: per-hadith export button on the result card, batch export on the chat thread ("تصدير كل النتائج"); the legacy `.txt` export was removed.
+    - **Fonts**: added `Amiri` (Naskh, has U+FDFA ﷺ) and `Noto Naskh Arabic` (has U+FD41 ﵁) via `next/font`; the `.font-naskh` utility is now used for all hadith text — the system UI fonts rendered those ligatures as empty boxes.
+    - **Gotchas fixed during verification**: html-to-image embeds fonts only when it resolves the *cloned* node (never pre-compute the font CSS from the original node, never pass `skipFonts`); captured nodes need an explicit width or the PNG comes out 1px; SVG `<pattern>` ids do not survive cloning (use data-URI backgrounds); scaled previews must be pinned to `direction: ltr` in RTL; `1 / 4` counters need `direction: ltr`.
+    - **Follow-up (same task)**: the batch image tab exported only the first hadith → it now renders one card per hadith and archives them into a **ZIP** (`fflate`); added a **"تصدير الخلاصة"** button (styled like "تصدير كل النتائج") that writes the LLM summary as a Word document; the summary is no longer plain text — `lib/export/markdown.ts` parses it (headings, Arabic-Indic ordered lists `١.`, quotes, `[1]` citation chips) and `app/ask/_components/rich-summary.tsx` renders it as a short article.
+    - **Second follow-up**: the batch export now carries the **question + the answer + every hadith** (PDF: cover → خلاصة البحث page → one page per hadith; Word: question → خلاصة البحث → cards; Excel: question + summary in the info sheet). Added **4 more templates that change the design, not just the colours** (`telegram` channel band, `newspaper` masthead, `mosaic` geometric tile, `spotlight` poster) and a **horizontal 1440×900** size with a frameless layout and a single accent rule.
+    - **Third follow-up**: the sanad in the exported PDF is a node-link tree (`SanadGraph`) — Prophet ﷺ root, central spine, numbered narrator cards alternating right/left, source note and overflow chip — instead of a plain row of pills. The Word export keeps the linked-chip chain.
+    - **Verified**: `npx tsc --noEmit`, `npm run lint`, `npm run build` clean; browser-driven end-to-end check (`scripts/check-exports.mjs`) produces a 1080×1350 PNG, a 3-card ZIP, a 5-page A4 PDF, valid .docx (hadiths + summary) and .xlsx; all 32 template × size combinations render; mobile 390px and desktop EN/AR verified with no horizontal overflow.
 
 ### ⚙️ Features
 

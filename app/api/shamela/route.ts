@@ -388,6 +388,7 @@ export async function GET(request: NextRequest) {
         bookUrl: null,
         pageId: null,
         url: null,
+        embedUrl: null,
         searchUrl,
         source: null,
       },
@@ -395,6 +396,8 @@ export async function GET(request: NextRequest) {
   }
 
   const bookUrl = `${SHAMELA}/book/${bookNumber}`;
+  const embedUrl = (pageId: string) =>
+    `/api/shamela/page?book=${encodeURIComponent(bookNumber)}&page=${encodeURIComponent(pageId)}`;
   const cached = resolutionCache.get(hadithId);
   if (cached) {
     return NextResponse.json({
@@ -405,6 +408,7 @@ export async function GET(request: NextRequest) {
         bookUrl,
         pageId: cached.pageId,
         url: `${bookUrl}/${cached.pageId}#p1`,
+        embedUrl: embedUrl(cached.pageId),
         searchUrl,
         source: cached.source,
       },
@@ -436,6 +440,7 @@ export async function GET(request: NextRequest) {
         bookUrl,
         pageId: null,
         url: null,
+        embedUrl: null,
         searchUrl,
         source: null,
       },
@@ -452,6 +457,7 @@ export async function GET(request: NextRequest) {
       bookUrl,
       pageId: match.pageId,
       url: `${bookUrl}/${match.pageId}#p1`,
+      embedUrl: embedUrl(match.pageId),
       searchUrl,
       source: match.source,
     },

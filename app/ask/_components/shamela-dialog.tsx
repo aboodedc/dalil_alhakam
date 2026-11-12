@@ -22,7 +22,10 @@ interface ShamelaData {
   bookTitle: string;
   bookUrl: string | null;
   pageId: string | null;
+  /** Canonical Shamela reader URL (opens the full site in a new tab). */
   url: string | null;
+  /** Same-origin clean page used inside the iframe (book text only). */
+  embedUrl: string | null;
   searchUrl: string;
   /** How the page was found; the UI does not depend on it. */
   source?: "search" | "mcp" | "page-map" | null;
@@ -121,7 +124,8 @@ function ShamelaBody({ result }: { result: HadithResult }) {
 
   const searchUrl = fallbackSearchUrl(result.text);
   const ready = state.status === "ready" ? state.data : null;
-  const frameUrl = ready?.url ?? null;
+  const frameUrl = ready?.embedUrl ?? ready?.url ?? null;
+  const externalUrl = ready?.url ?? null;
   const bookUrl = ready?.bookUrl ?? null;
 
   return (
@@ -157,7 +161,7 @@ function ShamelaBody({ result }: { result: HadithResult }) {
               shamela.ws
             </span>
             <a
-              href={frameUrl}
+              href={externalUrl ?? frameUrl}
               target="_blank"
               rel="noreferrer"
               className="inline-flex min-h-[36px] shrink-0 items-center gap-1 rounded-lg px-2 text-[11px] font-bold text-primary hover:bg-primary/10"

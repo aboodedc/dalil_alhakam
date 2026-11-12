@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono, Readex_Pro } from "next/font/google";
+import { Amiri, Geist, Geist_Mono, Noto_Naskh_Arabic, Readex_Pro } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/common/language-provider";
 import { ThemeProvider } from "@/components/common/theme-provider";
@@ -21,6 +21,25 @@ const readexPro = Readex_Pro({
   variable: "--font-readex",
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "500", "600", "700"],
+});
+
+// Naskh face for hadith text, sanad cards and every export template. It is
+// served from the app origin (next/font), so canvas/PDF/image capture can
+// embed it without CORS problems.
+const amiri = Amiri({
+  variable: "--font-amiri",
+  subsets: ["arabic", "latin"],
+  weight: ["400", "700"],
+});
+
+// Amiri has no glyph for U+FD41 (﵁ الرضي الله عنه) — the honorific the
+// corpus puts after every companion's name — and U+FDFA (ﷺ) only in some
+// builds. Noto Naskh Arabic covers the whole Arabic Presentation Forms range
+// and is used as the fallback so exports never show a missing-glyph box.
+const notoNaskh = Noto_Naskh_Arabic({
+  variable: "--font-noto-naskh",
+  subsets: ["arabic"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -68,7 +87,7 @@ const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem("dalil-the
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ar" dir="rtl" className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="ar" dir="rtl" className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} ${amiri.variable} ${notoNaskh.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col bg-background font-[var(--font-readex),var(--font-geist-sans)] text-foreground">
         <Script id="dalil-theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}

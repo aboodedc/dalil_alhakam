@@ -131,6 +131,19 @@ body {
   color: transparent;
 }
 
+/* Hadith text uses a Naskh face. The system UI fonts (Geist/Arial) have no
+   glyph for U+FDFA or U+FD41, which the corpus puts after the Prophet's and
+   the companions' names — they rendered as empty boxes. Amiri carries the
+   Prophet's ligature, Noto Naskh Arabic the companion's one. */
+.font-naskh {
+  font-family:
+    var(--font-amiri),
+    var(--font-noto-naskh),
+    "Traditional Arabic",
+    "Noto Naskh Arabic",
+    serif;
+}
+
 .card-glow {
   box-shadow:
     0 1px 0 rgba(97, 80, 234, 0.08),

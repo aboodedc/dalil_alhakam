@@ -1,7 +1,7 @@
 # 🧠 Important — Project Memory
 
 > This file is the AI's memory. Read it at the start of every conversation.
-> Last updated: 2026-11-09
+> Last updated: 2026-11-12
 
 ---
 
@@ -53,7 +53,8 @@
 - `POST /api/ask` `{question, bookId (id|slug), userId?}` → `{queryId, rewrittenQuery, answer, hadiths[10], droppedCount, latencyMs, cost}` — `cost` = per-stage USD estimate (`lib/ai/costs.ts`, TASK-021)
 - `GET /api/hadiths/[id]` (2026-10-06, TASK-023) → `{sanad, hukm, scholar, alternatives, source, aiGenerated, missingFromDb}` — DB verbatim; Shamela rows have `sanad=[]`/`hukm=""` → transient LLM estimate (`lib/ai/hadith-details.ts`, strict JSON + hukm allowlist, NEVER persisted); UI labels it «تقدير آلي — ليس حكماً شرعياً». AI capped at 3s (`HADITH_DETAILS_TIMEOUT_MS`, aborted via signal → `timedOut: true` = «not found»); dialog caches clean results in-memory (session-only, refresh clears)
 - `GET /api/books` (DB, mock fallback) · `GET /api/health` (DB + providers + corpus)
-- `GET /api/shamela?hadithId=` (2026-11-11, TASK-027/028) → `{matched, bookTitle, bookUrl, pageId, url, searchUrl, source}` — derives the Shamela book id from `Book.id` (`shamela-b<id>`); resolves the page by (1) POSTing the hadith snippet to `https://shamela.ws/ajax/search` with `books[]=<book>` and validating the first result's snippet, then (2) `shamela_find` on the public MCP `https://mcp.shamela.ws`, then (3) `ajax/pagenum2id/<book>/<part>/<printed page>`; caches per hadith + page mapping in memory and returns book/search fallbacks when nothing matches
+- `GET /api/shamela?hadithId=` (2026-11-11, TASK-027/028) → `{matched, bookTitle, bookUrl, pageId, url, embedUrl, searchUrl, source}` — derives the Shamela book id from `Book.id` (`shamela-b<id>`); resolves the page by (1) POSTing the hadith snippet to `https://shamela.ws/ajax/search` with `books[]=<book>` and validating the first result's snippet, then (2) `shamela_find` on the public MCP `https://mcp.shamela.ws`, then (3) `ajax/pagenum2id/<book>/<part>/<printed page>`; caches per hadith + page mapping in memory and returns book/search fallbacks when nothing matches
+- `GET /api/shamela/page?book=&page=` (2026-11-11, TASK-029) → standalone HTML with ONLY the `.nass` book text from `https://shamela.ws/ajax/pageContent/<book>/<pageId>`; strips Shamela's header/sidebar/navigation/footer, inline scripts and handlers, rewrites root-relative URLs, and serves it with a restrictive CSP. The dialog iframe uses this same-origin `embedUrl`; the original `url` stays for "open on Shamela"
 - `POST /api/ratings` · `POST /api/reports` · `GET /api/history` · `GET/POST /api/folders` · `PATCH /api/manager/books` (books-only scope)
 - Ask/manager/workspace/report pages wired to these endpoints with offline/mock fallbacks
 
@@ -79,6 +80,24 @@
 ### Fonts
 - **Geist** (sans) and **Geist Mono** — loaded via `next/font/google`
 - CSS variables: `--font-geist-sans`, `--font-geist-mono`
+- **Readex Pro** (`--font-readex`) — Arabic-capable UI face (latin + arabic subsets)
+- **Amiri** (`--font-amiri`) — Naskh face for hadith text; has the ﷺ ligature (U+FDFA)
+- **Noto Naskh Arabic** (`--font-noto-naskh`) — Naskh fallback; Amiri has **no** glyph for U+FD41 (﵁ رضي الله عنه), the honorific the corpus puts after every companion's name
+- The system UI fonts (Geist/Arial) have **no** glyph for U+FDFA/U+FD41 → they rendered as empty boxes. Use the `.font-naskh` utility class (`app/globals.css`) for every hadith text element.
+
+### Client-side PDF/Word/Excel export (2026-11-12)
+- **Stack**: `html-to-image` (rasterises real HTML → PNG) + `pdf-lib` (A4 pages) + `docx` (Word) + `write-excel-file` (Excel, import from `write-excel-file/browser`).
+- **Why HTML→PNG for PDF**: client-side Arabic shaping is unreliable; rendering the real page guarantees the exported PDF matches the preview.
+- **Modules**: `lib/export/{download,pdf,word,excel,text}.ts` + `app/ask/_components/export/{export-dialog,share-templates,print-page,fonts}.tsx`.
+- **Templates**: 8 image templates × 4 sizes. A template changes the *design*, not only the palette — each has its own `frame` (double rule / hairline / editorial rules / solid band / accent bar / none) and `header` (brand block / masthead / channel avatar / plain), plus its own pattern (stars, dots, mosaic tiles, none). Templates: `midnight`, `manuscript`, `emerald`, `minimal`, `telegram`, `newspaper`, `mosaic`, `spotlight`.
+- **Sizes**: `portrait` (1080×1350), `square` (1080×1080), `story` (1080×1920), `landscape` (1440×900 — a wide, frameless card with a single accent rule, for link previews). Each size carries its own CSS size, capture scale and layout (`stack` vs `side`).
+- The card is laid out at its CSS size and captured at `scale`× so the exported PNG is sharp on social platforms.
+- **Gotcha — font embedding**: `html-to-image` matches `@font-face` rules against the **inline** `font-family` of the node it clones. `var(--font-amiri)` never matches → **no fonts get embedded** and the PNG silently falls back to a system font. Always let html-to-image embed the fonts itself (`capturePng` must NOT pass `skipFonts` and must NOT pre-compute the font CSS from the original node).
+- **Gotcha — capture size**: the captured node's `clientWidth` decides the output size. The offscreen stage is 1×1, so every captured page needs an explicit `width: 794` (A4 at 96dpi) or the PNG comes out 1px wide (the PDF then looks empty).
+- **Gotcha — SVG `<pattern>`**: `fill="url(#id)"` does not survive html-to-image's DOM cloning → use an inline SVG **data URI** as a `background-image` instead.
+- **Gotcha — RTL scale preview**: a card scaled with `transform: scale()` inside an RTL container is laid out from the right and gets cropped — pin the preview wrapper to `direction: ltr`.
+- **Gotcha — RTL counters**: `1 / 4` inside an RTL paragraph renders as `4 / 1`; set `direction: "ltr"` on the badge.
+- **Verification**: `scripts/check-exports.mjs` drives a real browser, intercepts the download blobs and writes them to disk (needs `puppeteer-core` + Chromium; not a project dependency).
 
 ### Tailwind CSS v4 Specifics
 - **No `tailwind.config.js`** — Tailwind v4 uses CSS-based configuration
@@ -153,10 +172,25 @@
   - **Run Prisma/npm from Windows PowerShell** for localhost DB access, or from WSL invoke Windows interop: `powershell.exe -NoProfile -Command "Set-Location 'D:\Projects\dalil-al-ahkam-hakthon'; npm run db:migrate"`.
   - Direct SQL from WSL: use the Windows client `/mnt/d/Program Files/PostgreSQL/18/bin/psql.exe` with `-h localhost` and `PGPASSWORD` passed through `WSLENV=PGPASSWORD` (plain env vars are not inherited by Windows executables).
   - WSL-native `npm run dev` only works if `.env` points at a reachable host IP (e.g. `172.28.32.1`) AND Windows Postgres allows that connection (`listen_addresses` + `pg_hba.conf`). Keep `.env` at `localhost:5432` for Windows dev (primary); override per-command for WSL runs.
+- **2026-11-12 — `allowedDevOrigins`**: Next 16 dev returns **403 for every client chunk** requested with a cross-origin `Origin` header, so the dev server looked broken (no hydration, no search) when opened from the host IP. `next.config.ts` now lists `allowedDevOrigins: ["172.28.32.1", "192.168.56.1"]`. Same symptom = check this first.
 
 ---
 
 ## 🎨 Design Decisions
+
+### Sanad tree + document/image export (2026-11-12)
+- **Context**: The user asked for the sanad to be shown as a tree/graph, and for well-designed PDF / Word / Excel / image exports with selectable image templates for social sharing.
+- **Detail**:
+  - `lib/sanad.ts` — Arabic normalisation, explicit-chain cleaning, conservative matn-chain extraction, `resolveSanad`, `formatSanadLine`, `truncateAtWord`, `chunkText`.
+  - `app/ask/_components/sanad-graph.tsx` — alternating tree layout (Prophet ﷺ root → narrators → matn card), source badges, copy action.
+  - **Corpus reality**: every synced Shamela row has an EMPTY `sanad` and `hukm` (`scripts/sync_shamela.py` writes `sanad=[]`). The graph therefore falls back to the chain literally named at the start of the matn and labels it "مستخرج من نص الحديث" — it never invents narrators. `/api/hadiths/[id]` may return an AI estimate (`aiGenerated: true`); the UI must keep the "estimate, not a ruling" disclaimer.
+  - Export dialog: `app/ask/_components/export/export-dialog.tsx` (tabs صورة / PDF / Word / Excel). Per-hadith from the result card, batch ("تصدير كل النتائج") from the chat thread.
+  - **Batch image export = ZIP**: the offscreen stage renders one card per hadith (`[data-export-card]`); the batch ZIP captures each at 3× and archives them with `fflate` (level 0 — PNGs are already compressed). The single-hadith dialog still downloads one PNG.
+  - **Summary export**: `lib/export/summary.ts` → a Word document of the LLM answer (heading levels, list items, quotes, superscript citations) + `lib/export/markdown.ts`, a small Markdown reader shared by the chat view (`app/ask/_components/rich-summary.tsx`) and the Word export. It understands Arabic-Indic ordered markers (`١.`) and numeric citation markers (`[1]`), and strips the stray HTML the corpus sometimes carries. `RichSummary` has an `app` and a `print` variant — the print one uses fixed ink colours, because the dark theme's near-white text is invisible on the PDF's paper background.
+  - **The batch export carries the whole session**: the PDF gets cover → *خلاصة البحث* page → one page per hadith; the Word gets header → question → *خلاصة البحث* → the hadith cards; the Excel info sheet stores the question and the summary next to the hadith table. The "تصدير الخلاصة" button in the chat writes the summary alone as a Word file.
+  - **Sanad in the PDF is a node-link graph**: `SanadGraph` in `export/print-page.tsx` puts the Prophet ﷺ root at the top, a central spine down the page, and the narrators in compact cards that alternate right/left with numbered badges on the spine (the same tree the in-app dialog shows, capped at 6 nodes + a `+N رواة` chip). The panel states where the chain came from (database / AI estimate / extracted from the matn) and ends in a gold terminal. It is sized to fit a full 2,200-character matn page even with an overflow chain. The Word export keeps the simpler linked-chip chain in the same reading order.
+  - The old `.txt` export (`lib/export-results.ts` → `exportResults`) was removed; only `createFile`/`enrichHadith` remain.
+  - See «Client-side PDF/Word/Excel export» in Tech Stack for the implementation gotchas.
 
 ### Mobile-First Responsive Mandatory
 - **Date**: 2026-10-01
@@ -183,12 +217,13 @@
 ### Shamela popup for a hadith (2026-11-11)
 - **Context**: User wants clicking a hadith itself to open a popup with the hadith's original page from Al-Maktaba Al-Shamela, with a visible border around the hadith.
 - **Detail**:
-  - `app/ask/_components/shamela-dialog.tsx`: the DB text is shown in a 2px `border-primary/40` quote frame (the "border around the hadith"), then the matching Shamela reader page is embedded in an iframe with a browser-style header + external-open link.
+  - `app/ask/_components/shamela-dialog.tsx`: the DB text is shown in a 2px `border-primary/40` quote frame (the "border around the hadith"), then the matching book page is embedded in an iframe using the same-origin clean proxy `/api/shamela/page` (book text only) with a browser-style header + external-open link.
   - `result-card.tsx`: the hadith text is now a bordered, clickable block with an `ask.shamela.hint` line; the details dialog still opens from the "السند والحكم" button.
-  - The resolution lives in `GET /api/shamela` (see Backend API). It first searches inside the book (`POST ajax/search` with `books[]`) and validates the first result against the hadith text, then tries the public Shamela MCP `shamela_find`, then falls back to the stored volume/page mapping. The iframe URL ends in `#p1` so the embedded page skips Shamela's site header and starts at content.
+  - The resolution lives in `GET /api/shamela` (see Backend API). It first searches inside the book (`POST ajax/search` with `books[]`) and validates the first result against the hadith text, then tries the public Shamela MCP `shamela_find`, then falls back to the stored volume/page mapping. The response exposes both `url` (canonical Shamela reader page) and `embedUrl` (clean proxy).
   - Text validation matters: the old `pagenum2id` mapping alone can point at the adjacent page (hadith 67-2 was mapped to `book/11194/240`, but the text is on `book/11194/241`). Search/MCP now return 241.
   - If every resolver fails, the dialog shows an amber fallback with the Shamela book link + a manual search link + retry — never a dead iframe. Client resolutions are cached per hadith id for the session.
-  - Shamela allows iframe embedding (no `X-Frame-Options` / `frame-ancestors` as of 2026-11-11). Its visible search page does not prefill from `?q=`; the real search is `POST ajax/search` with `term`, `books[]`, etc.
+  - The proxy is required to remove Shamela's chrome: cross-origin iframe injection is impossible, so `/api/shamela/page` fetches `ajax/pageContent/<book>/<pageId>` JSON and renders only `.nass` with local typography. It strips header/sidebar/navigation/footer, scripts and handlers, hides copy buttons, and keeps footnotes (`.hamesh`).
+  - Shamela allows iframe embedding (no `X-Frame-Options` / `frame-ancestors` as of 2026-11-11), but the popup no longer embeds the full site. Its visible search page does not prefill from `?q=`; the real search is `POST ajax/search` with `term`, `books[]`, etc.
 
 ---
 
@@ -198,7 +233,8 @@
 - **Reader URL**: `https://shamela.ws/book/{bookId}/{pageId}`. `pageId` is Shamela's INTERNAL page id, NOT the printed page. `GET https://shamela.ws/ajax/pagenum2id/{bookId}/{part}/{printedPage}` maps printed page → internal id (plain integer), but it can be off by one when the synced hadith starts on the next page (book 11194 row 67-2: stored p148 → 240, actual text on 241). Use text-validated search first; keep this mapping as a fallback.
 - **In-book search**: `POST https://shamela.ws/ajax/search` (`application/x-www-form-urlencoded`) with `term=<snippet>`, `aqsam=`, `decades=-1`, `authors=`, `books[]=<bookId>`. The HTML response contains `<article class="srch-result">` blocks with `https://shamela.ws/book/<book>/<pageId>` links and `srch-snippet-text` excerpts. The first validated result is the page the site's own search would open. The visible `?q=` page does not run a search.
 - **Public MCP**: `https://mcp.shamela.ws` (POST, JSON-RPC/stateless, free read-only, no key). Tools: `shamela_find`, `shamela_find_scoped`, `shamela_open`, `shamela_open_many`. `shamela_find` returns `structuredContent.evidence.sources[]` with `book_id`, `page_id`, full page `text`, and `citation.markdown`. Use `book_queries: ["<book title>"]` to pin the edition. `https://shamela.link/mcp` is a different authenticated endpoint (OAuth at `https://shamela.link/api/auth`) and is not needed for this feature.
-- Page HTML contains paragraph anchors `#p1…#pN`; `#p1` skips the site nav/header. The site sends no `X-Frame-Options`/`frame-ancestors`, so reader pages embed in an iframe (verified 2026-11-11).
+- **Page content JSON**: `GET https://shamela.ws/ajax/pageContent/{bookId}/{pageId}` → `{nass, part, pageNum, title, nextId, prevId, pageId}`. `nass` is the exact page HTML (paragraphs, footnotes, anchors), with no site header/sidebar/footer. This is the clean source used by `/api/shamela/page`; it is far better than scraping the full reader HTML.
+- Page HTML contains paragraph anchors `#p1…#pN`; `#p1` skips the site nav/header. The site sends no `X-Frame-Options`/`frame-ancestors`, so reader pages can embed in an iframe (verified 2026-11-11), but the popup uses the clean proxy instead.
 
 ### Providers — Cloudflare bge-m3 (embed) + Cohere (rerank) + Google Gemini (LLM)
 - **Current live stack (user decision 2026-10-06)**: embeddings = Cloudflare Workers AI `@cf/baai/bge-m3` (1024 dims ✓); reranker = **Cohere v2** `rerank-multilingual-v3.0` (Arabic ✓); LLM = **Google Gemini `gemini-3.5-flash-lite`** via `https://generativelanguage.googleapis.com/v1beta/openai/` (OpenAI-compat — no code change; answer OFF by default + rewriter ON, `QUERY_REWRITE_MIN_LENGTH=0` = always). Previous LLM history: Ollama qwen3.5 → OpenRouter `meta-llama/llama-3.1-8b-instruct` → `google/gemma-4-31b-it:free` (429 upstream) → `nvidia/nemotron-3-super-120b-a12b:free` → **Gemini (current)**. `lib/ai/llm.ts` keeps 429-retry + `reasoning` fallback.

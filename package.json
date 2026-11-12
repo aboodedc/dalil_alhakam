@@ -29,12 +29,17 @@
     "@radix-ui/react-slot": "^1.4.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "docx": "^9.15.3",
+    "fflate": "^0.8.3",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^1.49.0",
     "next": "16.3.8",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.23.1",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "tailwind-merge": "^3.7.0"
+    "tailwind-merge": "^3.7.0",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

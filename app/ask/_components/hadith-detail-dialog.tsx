@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { SanadGraph } from "./sanad-graph";
 
 interface HadithDetailsData {
   id: string;
@@ -92,7 +93,10 @@ export function HadithDetailDialog({ result, open, onOpenChange }: HadithDetailD
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent aria-label={t(locale, "ask.details.title")}>
+      <DialogContent
+        className="max-w-4xl"
+        aria-label={t(locale, "ask.details.title")}
+      >
         <DialogHeader>
           <DialogTitle>{t(locale, "ask.details.title")}</DialogTitle>
         </DialogHeader>
@@ -232,27 +236,15 @@ function DetailBody({ result, onRetry }: { result: HadithResult; onRetry: () => 
         <Separator />
 
         <section aria-label={t(locale, "ask.sanad")}>
-          <h3 className="mb-1.5 text-sm font-bold">{t(locale, "ask.sanad")}</h3>
-          {data.sanad.length > 0 ? (
-            <div className="flex flex-wrap items-center gap-1.5">
-              {data.sanad.map((n, i, arr) => (
-                <span key={`${n}-${i}`} className="flex items-center gap-1.5">
-                  <span className="rounded-full border border-border bg-muted px-2.5 py-1 text-xs font-medium">
-                    {n}
-                  </span>
-                  {i < arr.length - 1 ? (
-                    <span aria-hidden className="text-muted-foreground">
-                      ←
-                    </span>
-                  ) : null}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm leading-7 text-muted-foreground">
-              {t(locale, "ask.details.sanad.empty")}
-            </p>
-          )}
+          <SanadGraph
+            sanad={data.sanad.length > 0 ? data.sanad : result.sanad}
+            text={data.text || result.text}
+            bookTitle={data.source.bookTitle}
+            volume={data.source.volume}
+            page={data.source.page}
+            hadithNumber={data.source.hadithNumber}
+            aiGenerated={data.aiGenerated}
+          />
         </section>
 
         <section aria-label={t(locale, "ask.hukm")}>

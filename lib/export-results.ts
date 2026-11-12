@@ -2,37 +2,64 @@
 
 import type { HadithResult, HadithResultCollection } from "@/types";
 import { formatCitation } from "@/lib/utils";
-
 type DetailPayload = {
   sanad?: string[];
   hukm?: string;
   scholar?: string;
   citation?: string;
   summary?: string;
+  /** True when the API had to fall back to the LLM estimate. */
+  aiGenerated?: boolean;
 };
+
+export interface EnrichedHadith {
+  hadith: HadithResult;
+  /**
+   * True when the sanad/hukm came from the AI fallback rather than the
+   * database. Exports must label those — an estimate is not a ruling.
+   */
+  aiEstimated: boolean;
+}
 
 /**
  * Export Result sequence: for each hadith where sanad & hukm do not exist,
- * call GET /api/hadiths/[id], replace the item, then create the export file.
+ * call GET /api/hadiths/[id] and replace the item.
  */
-export async function enrichHadith(result: HadithResult): Promise<HadithResult> {
-  if (result.sanad.length > 0 && result.hukm.trim()) return result;
+export async function enrichHadith(result: HadithResult): Promise<EnrichedHadith> {
+  if (result.sanad.length > 0 && result.hukm.trim()) {
+    return { hadith: result, aiEstimated: false };
+  }
   try {
     const res = await fetch(`/api/hadiths/${result.id}`);
-    const json = (await res.json()) as { success: boolean; data?: DetailPayload };
-    if (!res.ok || !json.success || !json.data) return result;
+    const json = (await res.json()) as {
+      success: boolean;
+      data?: DetailPayload;
+    };
+    if (!res.ok || !json.success || !json.data) {
+      return { hadith: result, aiEstimated: false };
+    }
     const detail = json.data;
     return {
-      ...result,
-      sanad: result.sanad.length > 0 ? result.sanad : (detail.sanad ?? []),
-      hukm: result.hukm.trim() ? result.hukm : (detail.hukm ?? ""),
-      scholar: result.scholar || detail.scholar || "",
-      citation: result.citation || detail.citation || "",
-      summary: result.summary || detail.summary || "",
+      hadith: {
+        ...result,
+        sanad: result.sanad.length > 0 ? result.sanad : (detail.sanad ?? []),
+        hukm: result.hukm.trim() ? result.hukm : (detail.hukm ?? ""),
+        scholar: result.scholar || detail.scholar || "",
+        citation: result.citation || detail.citation || "",
+        summary: result.summary || detail.summary || "",
+      },
+      aiEstimated: detail.aiGenerated === true,
     };
   } catch {
-    return result;
+    return { hadith: result, aiEstimated: false };
   }
+}
+
+/** Fetch the details of every hadith in parallel, keeping the AI-estimate flag. */
+export async function enrichHadiths(
+  hadiths: HadithResult[],
+): Promise<EnrichedHadith[]> {
+  return Promise.all(hadiths.map((h) => enrichHadith(h)));
 }
 
 /** Class-diagram view: parallel arrays for a whole result set. */
@@ -50,7 +77,13 @@ export function toCollection(
   };
 }
 
-/** createFile(hadith[], answer) from the Export Result sequence. */
+/**
+ * Legacy plain-text export helpers.
+ *
+ * The user-facing export flow now lives in `lib/export/*` (PDF / Word /
+ * Excel / image) and the export dialog. These builders stay for callers that
+ * need a raw text rendering of a result set.
+ */
 export function createFile(
   hadiths: HadithResult[],
   answer: string,
@@ -94,21 +127,4 @@ export function createFile(
       : "Note: texts come from the database; missing sanad/hukm values are AI estimates, not scholarly rulings.",
   );
   return lines.join("\n");
-}
-
-/** exportResults(hadith[], answer) — enriches incomplete rows then downloads a file. */
-export async function exportResults(
-  hadiths: HadithResult[],
-  answer: string,
-  locale: "ar" | "en",
-): Promise<void> {
-  const enriched = await Promise.all(hadiths.map((h) => enrichHadith(h)));
-  const content = createFile(enriched, answer, locale);
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `dalil-results-${new Date().toISOString().slice(0, 10)}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
 }

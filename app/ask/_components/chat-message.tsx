@@ -2,18 +2,21 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { AlertCircle, Database, Download } from "lucide-react";
+import { AlertCircle, Database, Download, Loader2 } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
 import type { CostReport } from "@/lib/ai/costs";
 import { formatUsd } from "@/lib/ai/costs";
-import { exportResults } from "@/lib/export-results";
+import { formatExportDate, safeFilename } from "@/lib/export/download";
+import { exportSummary } from "@/lib/export/summary";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ResultCard } from "./result-card";
+import { RichSummary } from "./rich-summary";
+import { ExportDialog } from "./export/export-dialog";
 
 export interface ChatTurn {
   id: string;
@@ -70,7 +73,8 @@ interface ChatMessageProps {
 
 export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
   const { locale } = useLocale();
-  const [exporting, setExporting] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [summaryBusy, setSummaryBusy] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // A new turn is appended at the end of the thread, but the viewport should
@@ -90,13 +94,25 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  async function onExportAll() {
+  function onExportAll() {
     if (turn.hadiths.length === 0) return;
-    setExporting(true);
+    setExportOpen(true);
+  }
+
+  async function onExportSummary() {
+    if (!turn.answer?.trim()) return;
+    setSummaryBusy(true);
     try {
-      await exportResults(turn.hadiths, turn.answer ?? "", locale);
+      await exportSummary({
+        answer: turn.answer,
+        question: turn.question,
+        date: formatExportDate(locale),
+        filename: `${safeFilename("khulasa")}-${safeFilename(
+          turn.question.slice(0, 40),
+        )}.docx`,
+      });
     } finally {
-      setExporting(false);
+      setSummaryBusy(false);
     }
   }
 
@@ -142,12 +158,28 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
             {turn.answer ? (
               <Card data-scroll-target="" className="chat-enter">
                 <CardContent className="p-4 sm:p-5">
-                  <Badge variant="primary" className="mb-2">
-                    {t(locale, "ask.chat.answer")}
-                  </Badge>
-                  <p dir="auto" className="text-[15px] leading-8 break-words whitespace-pre-wrap">
-                    {turn.answer}
-                  </p>
+                  <div className="mb-2 flex flex-wrap items-center gap-2">
+                    <Badge variant="primary">
+                      {t(locale, "ask.chat.answer")}
+                    </Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={onExportSummary}
+                      disabled={summaryBusy}
+                    >
+                      {summaryBusy ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
+                      {summaryBusy
+                        ? t(locale, "ask.export.summary.busy")
+                        : t(locale, "ask.export.summary.download")}
+                    </Button>
+                  </div>
+                  <RichSummary text={turn.answer} />
                 </CardContent>
               </Card>
             ) : null}
@@ -163,10 +195,10 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
                     size="sm"
                     variant="outline"
                     onClick={onExportAll}
-                    disabled={exporting}
+                    disabled={turn.hadiths.length === 0}
                   >
                     <Download className="h-4 w-4" />
-                    {exporting ? "…" : t(locale, "ask.export.all")}
+                    {t(locale, "ask.export.all")}
                   </Button>
                 </div>
                 {turn.hadiths.map((h, i) => (
@@ -200,6 +232,15 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
           </div>
         </div>
       )}
+
+      <ExportDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        hadiths={turn.hadiths}
+        question={turn.question}
+        answer={turn.answer}
+        batch
+      />
     </div>
   );
 }
