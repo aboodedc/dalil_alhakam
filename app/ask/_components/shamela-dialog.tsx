@@ -153,7 +153,7 @@ function ShamelaBody({ result }: { result: HadithResult }) {
             {t(locale, "ask.shamela.loading")}
           </p>
         </div>
-      ) : frameUrl ? (
+      ) :  frameUrl ? (
         <div className="overflow-hidden rounded-xl border border-border">
           <div className="flex items-center gap-2 border-b border-border bg-muted/40 px-3 py-2">
             <Globe className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
@@ -178,33 +178,34 @@ function ShamelaBody({ result }: { result: HadithResult }) {
           />
         </div>
       ) : (
-        <div className="glass-subtle flex flex-col gap-3 rounded-2xl border-warning/35 p-4 text-sm leading-7 text-warning">
-          <p className="flex items-start gap-2">
-            <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
-            <span>{t(locale, "ask.shamela.fallback")}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {bookUrl ? (
-              <Button asChild size="sm" variant="outline">
-                <a href={bookUrl} target="_blank" rel="noreferrer">
-                  <LibraryBig className="h-4 w-4" aria-hidden />
-                  {t(locale, "ask.shamela.book")}
-                </a>
-              </Button>
-            ) : null}
-            <Button asChild size="sm" variant="outline">
-              <a href={searchUrl} target="_blank" rel="noreferrer">
-                <Search className="h-4 w-4" aria-hidden />
-                {t(locale, "ask.shamela.search")}
-              </a>
-            </Button>
-            {state.status === "error" ? (
-              <Button type="button" size="sm" onClick={() => setAttempt((n) => n + 1)}>
-                {t(locale, "common.retry")}
-              </Button>
-            ) : null}
-          </div>
-        </div>
+        // <div className="glass-subtle flex flex-col gap-3 rounded-2xl border-warning/35 p-4 text-sm leading-7 text-warning">
+        //   <p className="flex items-start gap-2">
+        //     <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
+        //     <span>{t(locale, "ask.shamela.fallback")}</span>
+        //   </p>
+        //   <div className="flex flex-wrap gap-2">
+        //     {bookUrl ? (
+        //       <Button asChild size="sm" variant="outline">
+        //         <a href={bookUrl} target="_blank" rel="noreferrer">
+        //           <LibraryBig className="h-4 w-4" aria-hidden />
+        //           {t(locale, "ask.shamela.book")}
+        //         </a>
+        //       </Button>
+        //     ) : null}
+        //     <Button asChild size="sm" variant="outline">
+        //       <a href={searchUrl} target="_blank" rel="noreferrer">
+        //         <Search className="h-4 w-4" aria-hidden />
+        //         {t(locale, "ask.shamela.search")}
+        //       </a>
+        //     </Button>
+        //     {state.status === "error" ? (
+        //       <Button type="button" size="sm" onClick={() => setAttempt((n) => n + 1)}>
+        //         {t(locale, "common.retry")}
+        //       </Button>
+        //     ) : null}
+        //   </div>
+        // </div>
+        <iframe src={"https://shamela.ws/search?q="+encodeURIComponent(result.text)}></iframe>
       )}
 
       <p className="flex items-start gap-1.5 text-[11px] leading-4 text-muted-foreground">
