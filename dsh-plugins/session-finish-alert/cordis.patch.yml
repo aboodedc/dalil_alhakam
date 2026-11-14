@@ -1,0 +1,5 @@
+# Session finish alerts: a browser-side plugin row. The Host half exports an
+# inert apply(); the Client module owns the status watcher and the alert UI.
+- insert:
+    - id: session-finish-alert
+      name: '@local/session-finish-alert'

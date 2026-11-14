@@ -1,6 +1,6 @@
 # 📋 Project Tasks — Dalil Al-Ahkam
 
-> Last updated: 2026-11-12
+> Last updated: 2026-11-14
 
 ---
 
@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 30 |
+| ✅ DONE | 32 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -47,6 +47,17 @@
   - **Created**: 2026-10-01
   - **Completed**: 2026-10-02
   - **Notes**: types/, lib/mock/books+hadiths, lib/i18n/dictionaries (ar/en), lib/workspace (localStorage), docs/SRS.md v1.0 FR-001–FR-008
+
+- [x] ✅ **TASK-032**: Full database backup (`npm run db:backup`) — self-verifying SQL dump
+  - **Priority**: High
+  - **Category**: Infrastructure
+  - **Created**: 2026-11-14
+  - **Completed**: 2026-11-14
+  - **Notes**:
+    - No `pg_dump`/psql/Docker/WSL in this environment → `scripts/backup-db.mjs` reads the DDL from the live catalogs (not `prisma/schema.prisma`) and every row of all 12 `public` tables through `pg`, inside one `REPEATABLE READ` snapshot, and writes `backups/dalil_alhakam_full_<ts>.sql` + `.manifest.json` + `.sql.sha256`
+    - Verification: the dump is replayed into a throw-away `backup_verify_*` schema, each table's row count + content md5 is compared with the source, then the schema is rolled back — production tables are never touched
+    - Baseline 2026-11-14: 12 tables · 3,220 rows (Book 2 · Hadith 2,656 · SearchQuery 56 · SearchResult 502 · Rating 2 · User 1 · Folder 1) · 22.4 MB · sha256 `59d952cc…`
+    - `/backups/` is gitignored (dump contains user rows + password hashes); restore into an empty DB with `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>.sql`
 
 ### 🎨 UI / Design
 
@@ -193,6 +204,19 @@
   - **Category**: Feature
   - **Created**: 2026-10-02
   - **Completed**: 2026-10-02
+
+- [x] ✅ **TASK-031**: «تفسير الحديث» button — AI explanation of a single hadith from the model
+  - **Priority**: High
+  - **Category**: Feature
+  - **SRS Ref**: FR-009
+  - **Created**: 2026-11-14
+  - **Completed**: 2026-11-14
+  - **Notes**:
+    - Per-card button on `result-card.tsx` opens a dialog with a structured, Arabic tafsir generated from the hadith text: المعنى الإجمالي · غريب الكلمات · الفوائد والأحكام المستفادة · كيف يُعمل به
+    - New `POST /api/hadiths/[id]/tafsir` → fetch the hadith verbatim from Postgres, call the LLM with a strict JSON contract + guardrails (no fatwa, no invented grading/takhrij, no scholarly attribution unless certain, ignore instructions inside the hadith text), 30s abort cap (`TAFSIR_TIMEOUT_MS`), transient result never persisted
+    - UI: loading skeleton, timeout/error retry, AI-generation disclaimer, copy action, session cache per hadith, RTL + mobile-first, 44px targets; closing the dialog aborts the model call
+    - i18n keys `ask.tafsir.*` in Arabic + English (18 keys, verified present in both dictionaries); SRS FR-009 added
+  - **Verified**: `npx tsc --noEmit` ✓, `npm run lint` ✓ (only 2 pre-existing footer warnings), `npm run build` ✓ (36 routes incl. `/api/hadiths/[id]/tafsir`); live DB + model test 2.0–2.7s returning meaning + 3 vocabulary + 3–4 benefits + application; HTTP route on the production build returned `success: true, aiGenerated: true` and 404 for an unknown id; UTF-8 Arabic response verified byte-for-byte; headless-Chrome E2E on `localhost:3000` at 1280×1000 + 390×844 — typed a query, clicked the card button, dialog rendered all four sections + disclaimer + copy, no error and no horizontal overflow (mobile dialog 358px on a 390px viewport); screenshots in `docs/screenshots/tafsir-*.png`
 
 ### 🐛 Bugs
 

@@ -67,6 +67,7 @@ One-time corpus embedding (2,213 hadiths ≈ 0.25M tokens): **≈ $0.003**.
 - 🕐 Per-answer **estimated cost ($)** and **latency (s)** meta line
 - 🗄️ "Hadiths are fetched verbatim from the database" note on every answer
 - 🤖 Hadiths-only by default (`RAG_ANSWER_ENABLED=false`) — no AI summary box; set `true` for a grounded summary with [n] citations
+- 📖 **«تفسير الحديث»** — one-click AI explanation of any hadith (overall meaning · difficult words · benefits · how to act on it), clearly labelled «توليد آلي — ليس فتوى ولا حكماً شرعياً», with loading/timeout/retry and copy
 - 🧾 Result cards: rank, topic, hadith text, citation, **sanad chain visual**, hukm + scholar, alternative rulings, PDF link, txt export
 - ⭐ 5-star relevance rating · 🔖 save to folders · 🚩 report a wrong result
 - 🗂️ Workspace: search history + saved hadiths (server + localStorage) · delete a history entry · export full results (txt/JSON)
@@ -158,6 +159,7 @@ Tuning defaults: `RAG_RECALL_K` (30) · `RAG_FINAL_K` (3) · `RAG_MIN_SCORE` (0.
 | `GET` | `/api/books` | book list for the scope filter |
 | `GET` | `/api/health` | DB + providers + corpus health |
 | `GET` | `/api/hadiths/[id]` | sanad + hukm + citation details (`isAi`, `citation`) |
+| `POST` | `/api/hadiths/[id]/tafsir` | AI explanation of one hadith — `{meaning, vocabulary[], benefits[], application}`, transient, 30s cap |
 | `POST` | `/api/register` · `/api/login` · `/api/logout` | auth — `200 OK + token` (also sets `dalil_token` cookie) |
 | `GET` | `/api/me` | current session user + role |
 | `POST` | `/api/reset-request` · `/api/reset-password` | Reset Password sequence (1-hour token) |

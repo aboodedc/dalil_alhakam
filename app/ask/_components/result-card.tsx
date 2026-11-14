@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Download, FileText, LibraryBig, ScrollText, Star } from "lucide-react";
+import { Bookmark, Download, FileText, LibraryBig, ScrollText, Sparkles, Star } from "lucide-react";
 import { useLocale } from "@/components/common/language-provider";
 import { t } from "@/lib/i18n/dictionaries";
 import type { HadithResult } from "@/types";
@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { HadithDetailDialog } from "./hadith-detail-dialog";
 import { ShamelaDialog } from "./shamela-dialog";
+import { TafsirDialog } from "./tafsir-dialog";
 import { ReportDialog } from "./report-dialog";
 import { ExportDialog } from "./export/export-dialog";
 
@@ -39,6 +40,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
   const [saved, setSaved] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shamelaOpen, setShamelaOpen] = useState(false);
+  const [tafsirOpen, setTafsirOpen] = useState(false);
   const [exportOpen, setExportOpen] = useState(false);
   const citation = formatCitation({
     bookTitle: result.bookTitle,
@@ -163,6 +165,15 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
         ) : null}
 
         <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => setTafsirOpen(true)}
+            title={t(locale, "ask.tafsir.open")}
+          >
+            <Sparkles className="h-4 w-4" aria-hidden />
+            {t(locale, "ask.tafsir.button")}
+          </Button>
           <Button size="sm" variant="outline" onClick={() => setDetailsOpen(true)}>
             <ScrollText className="h-4 w-4" />
             {t(locale, "ask.details.open")}
@@ -213,6 +224,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
       </CardContent>
       <HadithDetailDialog result={result} open={detailsOpen} onOpenChange={setDetailsOpen} />
       <ShamelaDialog result={result} open={shamelaOpen} onOpenChange={setShamelaOpen} />
+      <TafsirDialog result={result} open={tafsirOpen} onOpenChange={setTafsirOpen} />
       <ExportDialog
         open={exportOpen}
         onOpenChange={setExportOpen}

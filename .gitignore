@@ -37,6 +37,9 @@ yarn-error.log*
 # prisma generated client (rebuild with: npm run db:generate)
 /lib/generated/
 
+# database backups (contain user password hashes — never commit)
+/backups/
+
 # vercel
 .vercel
 

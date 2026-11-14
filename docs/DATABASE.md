@@ -25,6 +25,36 @@ cd "/mnt/d/Program Files/PostgreSQL/18/bin"
 ./psql.exe "postgres://<user>:<pass>@pooled.db.prisma.io:5432/postgres?sslmode=require" -f "D:/backup.sql"
 ```
 
+## Backups
+
+`npm run db:backup` writes a **full logical backup** (schema + every row of every
+`public` table) to `backups/` as one self-contained `.sql` file:
+
+```
+backups/dalil_alhakam_full_<YYYYMMDD_HHmmss>.sql           # the dump (portable SQL, no psql meta-commands)
+backups/dalil_alhakam_full_<YYYYMMDD_HHmmss>.manifest.json # row counts, per-table md5, sha256
+backups/dalil_alhakam_full_<YYYYMMDD_HHmmss>.sql.sha256    # checksum of the dump
+```
+
+- This machine has **no `pg_dump`/psql/Docker/WSL**, so `scripts/backup-db.mjs`
+  builds the dump with the `pg` driver: DDL is read from the live catalogs (not
+  from `prisma/schema.prisma`, so it matches production exactly) and data is
+  read as text inside a `REPEATABLE READ` snapshot.
+- Every run **verifies itself**: the dump is replayed into a scratch schema
+  (`backup_verify_*`), each table's row count + content md5 is compared with the
+  source, then the schema is rolled back. `--no-verify` skips the replay.
+- Provider internals (`ppg` schema, `pg_stat_statements`, `prisma_postgres`) are
+  excluded. The file creates the `vector` extension if it is missing.
+- `backups/` is **gitignored** — the dump contains user rows and password hashes.
+- Restore into an **empty** database (the file is one transaction and never
+  drops/replaces existing tables):
+  ```bash
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f backups/dalil_alhakam_full_<...>.sql
+  ```
+
+Baseline (2026-11-14): 12 tables · 3,220 rows · 22.4 MB
+(`Book` 2 · `Hadith` 2,656 · `SearchQuery` 56 · `SearchResult` 502 · `Rating` 2 · `User` 1 · `Folder` 1).
+
 ## The retrieval pipeline (MVP — all-remote via OpenRouter, Vercel-ready)
 
 ```

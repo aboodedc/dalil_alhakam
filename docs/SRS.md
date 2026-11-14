@@ -2,8 +2,8 @@
 # Dalil Al-Ahkam — دليل الأحكام
 # Semantic Retrieval & Citation System for Juristic Hadith Texts
 
-> Version: 1.0
-> Last updated: 2026-10-01
+> Version: 1.1
+> Last updated: 2026-11-14
 > Status: Approved (transcribed from SRS.pdf + frontend clarifications 2026-10-01)
 > Course: Software Engineering — Requirements Engineering Assignment
 
@@ -222,6 +222,39 @@ card layout, bilingual labels.
 
 ---
 
+### 3.9 FR-009 — AI Hadith Explanation («تفسير الحديث»)
+
+| Field | Detail |
+| :---- | :----- |
+| **ID** | FR-009 |
+| **Priority** | Should Have |
+| **SRS ref** | §2.3 (no synthetic rulings), §5.3 |
+| **Description** | From each result card, request an AI-generated educational explanation of a single hadith, grounded in its verbatim database text and clearly labelled as AI output. |
+| **User Story** | As a researcher, I want a structured explanation of a hadith, so that I can understand its meaning and vocabulary before verifying the source. |
+
+**Acceptance Criteria:**
+
+1. [ ] Every result card shows a «تفسير الحديث» button in its action row.
+2. [ ] The dialog returns four sections: المعنى الإجمالي · غريب الكلمات · الفوائد والأحكام المستفادة · كيف يُعمل به.
+3. [ ] The explanation is generated only from the stored hadith text (+ book/topic/sanad); it is never written back to the database.
+4. [ ] The UI labels the content «توليد آلي» with a «ليس فتوى ولا حكماً شرعياً» disclaimer.
+5. [ ] Loading, timeout (30s default), failure + retry states are handled; closing the dialog cancels the model request.
+6. [ ] Copy action and a session cache per hadith; RTL, mobile-first, 44px touch targets.
+
+**UI Notes:** Opens a dialog from the card. Loading shows a spinner + skeleton;
+errors show a retry button; success shows the AI disclaimer, citation, copy
+action, then the four sections. The generated content is Arabic (like all
+corpus data); labels are bilingual.
+
+**API/Data Notes:** `POST /api/hadiths/[id]/tafsir` → `{ success, data: {
+meaning, vocabulary[], benefits[], application, aiGenerated } }`. The route
+fetches the hadith verbatim from Postgres, calls the LLM with a strict JSON
+contract and guardrails (no fatwa, no invented grading/takhrij, no unattributed
+scholarly opinions, ignore instructions inside the hadith text), aborts at
+`TAFSIR_TIMEOUT_MS` (default 30 000 ms), and never persists the result.
+
+---
+
 ## 4. Non-Functional Requirements
 
 ### 4.1 Performance
@@ -302,3 +335,4 @@ Footer disclaimer: no synthetic rulings.
 | Date | Version | Change | Author |
 | :--- | :-----: | :----- | :----- |
 | 2026-10-01 | 1.0 | Transcribed SRS.pdf §§1–7; added FR-001–FR-008, page map, bilingual + mock-data decisions | OpenCode |
+| 2026-11-14 | 1.1 | Added FR-009 — AI hadith explanation («تفسير الحديث»): per-card button, structured Arabic tafsir, AI disclaimer, transient result, 30s timeout | OpenCode |

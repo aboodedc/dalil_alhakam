@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session finish alerts",
+    "description": "Alerts you when a session you are not watching stops running: a toast at the bottom-right with an Open action, a short chime, and a desktop notification while the window is in the background. Clicking the toast opens that session. Sessions started by a subagent are ignored. Notifications need the operating system or browser to allow them; without permission the toast and chime still work."
+  }
+}
