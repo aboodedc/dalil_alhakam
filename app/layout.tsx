@@ -1,15 +1,63 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Amiri, Geist, Geist_Mono, Noto_Naskh_Arabic, Readex_Pro } from "next/font/google";
+import localFont from "next/font/local";
+import {
+  Amiri,
+  Geist_Mono,
+  IBM_Plex_Sans_Arabic,
+  Noto_Naskh_Arabic,
+  Readex_Pro,
+} from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/components/common/language-provider";
 import { ThemeProvider } from "@/components/common/theme-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// Display face for headings and the navbar wordmark only. It is a local Saudi
+// typeface, so no external request is made for it. Each file is mapped to its
+// real weight so `font-semibold`, `font-bold`, etc. resolve without synthesis.
+const thmanyahSans = localFont({
+  variable: "--font-thmanyah-sans",
+  src: [
+    {
+      path: "../public/fonts/thmanyah-sans-Light.woff2",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/thmanyah-sans-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/thmanyah-sans-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/thmanyah-sans-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/fonts/thmanyah-sans-Black.woff2",
+      weight: "900",
+      style: "normal",
+    },
+  ],
+  display: "swap",
+  fallback: ["IBM Plex Sans Arabic", "Tahoma", "Arial", "sans-serif"],
+});
+
+// Default UI face: Arabic-first with Latin coverage. It applies to body copy,
+// buttons, navigation, forms and every non-heading interface element.
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ibm-plex-arabic",
+  subsets: ["arabic", "latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+  fallback: ["Tahoma", "Arial", "sans-serif"],
 });
 
 const geistMono = Geist_Mono({
@@ -17,6 +65,8 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Kept for the canvas/PDF/share export templates, which reference this variable
+// directly. It is no longer part of the live UI font stack.
 const readexPro = Readex_Pro({
   variable: "--font-readex",
   subsets: ["arabic", "latin"],
@@ -75,20 +125,21 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F2F4FF" },
-    { media: "(prefers-color-scheme: dark)", color: "#1c1917" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f5f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
 };
 
-// Participant Guide theme is dark-first: default to dark unless the user chose light.
-// Runs before hydration (injected into <head>) so the correct theme class is
-// present on first paint — no flash, and React never renders a <script> tag.
-const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem("dalil-theme");var d=s?s==="dark":true;if(d){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}}catch(e){}})();`;
+// Apple-style light-first theme: only switch to dark when the user explicitly
+// chose it. Runs before hydration (injected into <head>) so the correct theme
+// class is present on first paint — no flash, and React never renders a
+// <script> tag.
+const THEME_INIT_SCRIPT = `(function(){try{var s=localStorage.getItem("dalil-theme");if(s==="dark"){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}}catch(e){}})();`;
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ar" dir="rtl" className={`${geistSans.variable} ${geistMono.variable} ${readexPro.variable} ${amiri.variable} ${notoNaskh.variable} h-full antialiased`} suppressHydrationWarning>
-      <body className="flex min-h-full flex-col bg-background font-[var(--font-readex),var(--font-geist-sans)] text-foreground">
+    <html lang="ar" dir="rtl" className={`${thmanyahSans.variable} ${ibmPlexSansArabic.variable} ${geistMono.variable} ${readexPro.variable} ${amiri.variable} ${notoNaskh.variable} h-full antialiased`} suppressHydrationWarning>
+      <body className="flex min-h-full flex-col bg-background font-sans text-foreground">
         <Script id="dalil-theme-init" strategy="beforeInteractive">
           {THEME_INIT_SCRIPT}
         </Script>

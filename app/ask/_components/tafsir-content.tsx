@@ -121,7 +121,7 @@ export function TafsirContent({ data, result }: TafsirContentProps) {
           aria-label={t(locale, "ask.tafsir.copy")}
         >
           {copied ? (
-            <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" aria-hidden />
+            <Check className="h-4 w-4 text-success" aria-hidden />
           ) : (
             <Copy className="h-4 w-4" aria-hidden />
           )}

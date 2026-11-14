@@ -2,15 +2,20 @@
 
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Error({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-4 px-4 py-16 text-center">
-      <h1 className="text-2xl font-bold">Something went wrong</h1>
-      <Alert variant="destructive" className="w-fit">
-        <AlertDescription>{error.message}</AlertDescription>
-      </Alert>
-      <Button onClick={reset}>Try again</Button>
+    <div className="flex flex-1 items-center justify-center px-4 py-20">
+      <Card className="w-full max-w-md">
+        <CardContent className="flex flex-col items-center gap-4 p-8 text-center sm:p-10">
+          <h1 className="text-xl font-semibold tracking-tight">Something went wrong</h1>
+          <Alert variant="destructive" className="w-full text-start">
+            <AlertDescription>{error.message}</AlertDescription>
+          </Alert>
+          <Button onClick={reset}>Try again</Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

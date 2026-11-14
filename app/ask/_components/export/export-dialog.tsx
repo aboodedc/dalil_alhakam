@@ -624,7 +624,7 @@ export function ExportDialog({
                         disabled={busy !== null}
                       >
                         {copied ? (
-                          <Check className="text-emerald-600" />
+                          <Check className="text-success" />
                         ) : (
                           <Copy />
                         )}
@@ -778,7 +778,7 @@ export function ExportDialog({
             ) : null}
 
             {notice ? (
-              <p className="mt-4 flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+              <p className="mt-4 flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 py-2 text-xs font-medium text-success">
                 <Check className="h-4 w-4" aria-hidden />
                 {notice}
               </p>

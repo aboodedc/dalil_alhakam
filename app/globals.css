@@ -2,59 +2,138 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* ——— Participant Guide theme ———
-   كحلي #12183F · بنفسجي #6150EA · تركواز #2EF2C2 · أبيض مائل #F2F4FF */
+/* ——— Apple-inspired design language ———
+   SF-style typography · Apple blue #0071e3 · soft graphite text
+   Liquid glass = translucent material + blur + saturation + specular edge. */
 
 :root {
-  --background: #f2f4ff;
-  --foreground: #12183f;
-  --card: #ffffff;
-  --card-foreground: #12183f;
-  --muted: #e7eafb;
-  --muted-foreground: #4a5578;
-  --border: #d9ddf2;
-  --input: #d9ddf2;
-  --primary: #6150ea;
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --card: rgba(255, 255, 255, 0.64);
+  --card-foreground: #1d1d1f;
+  --muted: rgba(0, 0, 0, 0.05);
+  --muted-foreground: #6e6e73;
+  --border: rgba(0, 0, 0, 0.08);
+  --input: rgba(0, 0, 0, 0.1);
+  --primary: #0071e3;
   --primary-foreground: #ffffff;
-  --secondary: #12183f;
-  --secondary-foreground: #f2f4ff;
-  --accent: #e7e4ff;
-  --accent-foreground: #2e2680;
-  --brand: #6150ea;
-  --brand-turquoise: #0d9d78;
-  --brand-turquoise-fg: #052e26;
-  --destructive: #dc2626;
+  --secondary: #1d1d1f;
+  --secondary-foreground: #f5f5f7;
+  --accent: rgba(0, 113, 227, 0.1);
+  --accent-foreground: #0066cc;
+  --brand: #0071e3;
+  --brand-turquoise: #00a6a6;
+  --brand-turquoise-fg: #ffffff;
+  --destructive: #d70015;
   --destructive-foreground: #ffffff;
-  --warning: #b45309;
-  --warning-fg: #451a03;
-  --ring: #6150ea;
-  --radius: 0.875rem;
+  --warning: #b25000;
+  --warning-fg: #ffffff;
+  --success: #1a7f37;
+  --ring: #0071e3;
+  --radius: 1rem;
+
+  /* Glass material */
+  --glass-blur: 26px;
+  --glass-saturate: 180%;
+  --glass-solid: rgba(255, 255, 255, 0.52);
+  --glass-fallback: rgba(250, 250, 252, 0.95);
+  --glass-bg: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.34) 100%
+  );
+  --glass-bg-strong: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(255, 255, 255, 0.54) 100%
+  );
+  --glass-bg-subtle: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.46) 0%,
+    rgba(255, 255, 255, 0.22) 100%
+  );
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0.08) 42%,
+    transparent 70%
+  );
+  --glass-border: rgba(255, 255, 255, 0.72);
+  --glass-highlight: rgba(255, 255, 255, 0.9);
+  --glass-shade: rgba(0, 0, 0, 0.03);
+  --glass-shadow:
+    0 24px 60px -28px rgba(15, 23, 42, 0.25),
+    0 2px 8px -2px rgba(15, 23, 42, 0.06);
+
+  /* Page ambience — soft Apple product glows behind the glass */
+  --ambient:
+    radial-gradient(48rem 32rem at 98% -8%, rgba(0, 113, 227, 0.12), transparent 65%),
+    radial-gradient(42rem 28rem at 0% 14%, rgba(191, 90, 242, 0.09), transparent 65%),
+    radial-gradient(46rem 30rem at 55% 108%, rgba(0, 199, 190, 0.08), transparent 65%);
+
   color-scheme: light;
 }
 
 .dark {
-  --background: #12183f;
-  --foreground: #f2f4ff;
-  --card: #1a214f;
-  --card-foreground: #f2f4ff;
-  --muted: #1e2657;
-  --muted-foreground: #b9c0e4;
-  --border: #2c3670;
-  --input: #2c3670;
-  --primary: #2ef2c2;
-  --primary-foreground: #06281f;
-  --secondary: #6150ea;
-  --secondary-foreground: #ffffff;
-  --accent: #232c63;
-  --accent-foreground: #2ef2c2;
-  --brand: #2ef2c2;
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: rgba(28, 28, 30, 0.62);
+  --card-foreground: #f5f5f7;
+  --muted: rgba(255, 255, 255, 0.08);
+  --muted-foreground: #a1a1a6;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.16);
+  --primary: #0a84ff;
+  --primary-foreground: #ffffff;
+  --secondary: #f5f5f7;
+  --secondary-foreground: #1d1d1f;
+  --accent: rgba(10, 132, 255, 0.18);
+  --accent-foreground: #64b5ff;
+  --brand: #0a84ff;
   --brand-turquoise: #2ef2c2;
   --brand-turquoise-fg: #06281f;
-  --destructive: #f87171;
-  --destructive-foreground: #2a0a0a;
-  --warning: #fbbf24;
-  --warning-fg: #451a03;
-  --ring: #2ef2c2;
+  --destructive: #ff453a;
+  --destructive-foreground: #1d1d1f;
+  --warning: #ff9f0a;
+  --warning-fg: #1d1d1f;
+  --success: #30d158;
+  --ring: #0a84ff;
+
+  --glass-solid: rgba(28, 28, 30, 0.5);
+  --glass-fallback: rgba(24, 24, 26, 0.95);
+  --glass-bg: linear-gradient(
+    145deg,
+    rgba(44, 44, 48, 0.55) 0%,
+    rgba(20, 20, 22, 0.38) 100%
+  );
+  --glass-bg-strong: linear-gradient(
+    145deg,
+    rgba(48, 48, 52, 0.68) 0%,
+    rgba(22, 22, 24, 0.55) 100%
+  );
+  --glass-bg-subtle: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  --glass-sheen: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.14) 0%,
+    rgba(255, 255, 255, 0.03) 42%,
+    transparent 70%
+  );
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-shade: rgba(0, 0, 0, 0.35);
+  --glass-shadow:
+    0 28px 70px -24px rgba(0, 0, 0, 0.8),
+    0 2px 10px -2px rgba(0, 0, 0, 0.5);
+
+  --ambient:
+    radial-gradient(48rem 32rem at 98% -8%, rgba(10, 132, 255, 0.2), transparent 65%),
+    radial-gradient(42rem 28rem at 0% 14%, rgba(191, 90, 242, 0.14), transparent 65%),
+    radial-gradient(46rem 30rem at 55% 108%, rgba(0, 199, 190, 0.1), transparent 65%);
+
   color-scheme: dark;
 }
 
@@ -74,61 +153,217 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-brand: var(--brand);
+  --color-brand-turquoise: var(--brand-turquoise);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-fg);
+  --color-success: var(--success);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans:
+    var(--font-ibm-plex-arabic), var(--font-readex), ui-sans-serif, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", Tahoma, Roboto, Helvetica, Arial, sans-serif;
+  --font-display:
+    var(--font-thmanyah-sans), var(--font-ibm-plex-arabic), var(--font-readex),
+    ui-sans-serif, -apple-system, "Segoe UI", Tahoma, Arial, sans-serif;
+  --font-mono:
+    var(--font-geist-mono), ui-monospace, "SF Mono", SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* In-page anchors (the hero's «كيف يعمل؟» link) glide to their target.
+   Reduced-motion users get the normal instant jump. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: var(--ambient);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
   color: var(--foreground);
-  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+}
+
+/* Only animate theme changes after hydration. Without this gate the very
+   first paint of a saved dark theme briefly transitions from the light
+   default, which looks like a flash. */
+html.theme-ready body {
   transition:
-    background-color 0.2s ease,
-    color 0.2s ease;
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+/* Apple-style typographic rhythm for headings. `.font-naskh` (specificity
+   0,1,0) remains untouched and still wins anywhere it is applied to hadith
+   text, including headings inside result cards. */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.025em;
 }
 
 ::selection {
-  background: #6150ea;
-  color: #fff;
+  background: rgba(0, 113, 227, 0.22);
+  color: inherit;
 }
 
 .dark ::selection {
-  background: #2ef2c2;
-  color: #06281f;
+  background: rgba(10, 132, 255, 0.38);
+  color: #ffffff;
 }
 
-/* Subtle Islamic star-pattern backdrop (PDF motif), drawn as inline SVG at 5% opacity */
-.islamic-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%236150EA' stroke-opacity='0.22' stroke-width='1'%3E%3Cpath d='M36 6l6 12 13 2-9 9 2 13-12-6-12 6 2-13-9-9 13-2z'/%3E%3Ccircle cx='36' cy='36' r='3'/%3E%3C/g%3E%3C/svg%3E");
+/* ——— Liquid glass ———————————————————————————————— */
+
+@layer components {
+  .glass,
+  .glass-strong,
+  .glass-subtle {
+    background-color: var(--glass-solid);
+    border: 1px solid var(--glass-border);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+
+  .glass {
+    background-image: var(--glass-sheen), var(--glass-bg);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      var(--glass-shadow);
+  }
+
+  .glass-strong {
+    background-image: var(--glass-sheen), var(--glass-bg-strong);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      inset 0 -1px 0 var(--glass-shade),
+      var(--glass-shadow);
+  }
+
+  .glass-subtle {
+    background-image: var(--glass-sheen), var(--glass-bg-subtle);
+    box-shadow: inset 0 1px 0 var(--glass-highlight);
+  }
+
+  /* Inner recessed glass well (composer, quote frames, table wells). */
+  .glass-inset {
+    background-color: color-mix(in oklab, var(--card) 55%, transparent);
+    background-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.025),
+      rgba(255, 255, 255, 0.06)
+    );
+    border: 1px solid var(--border);
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    backdrop-filter: blur(14px) saturate(150%);
+  }
+
+  .dark .glass-inset {
+    background-color: rgba(255, 255, 255, 0.035);
+    background-image: linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0.2),
+      rgba(255, 255, 255, 0.025)
+    );
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  /* Specular rim used by floating navigation / segmented controls. */
+  .glass-nav {
+    background-color: var(--glass-solid);
+    background-image: var(--glass-sheen), var(--glass-bg-strong);
+    border: 1px solid var(--glass-border);
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      0 18px 48px -20px rgba(0, 0, 0, 0.3);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    backdrop-filter: blur(30px) saturate(200%);
+  }
+
+  .dark .glass-nav {
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 1px 2px rgba(0, 0, 0, 0.5),
+      0 22px 60px -18px rgba(0, 0, 0, 0.9);
+  }
 }
 
-.dark .islamic-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%232EF2C2' stroke-opacity='0.14' stroke-width='1'%3E%3Cpath d='M36 6l6 12 13 2-9 9 2 13-12-6-12 6 2-13-9-9 13-2z'/%3E%3Ccircle cx='36' cy='36' r='3'/%3E%3C/g%3E%3C/svg%3E");
+/* Browsers without backdrop-filter: keep readable, near-solid surfaces. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong,
+  .glass-subtle,
+  .glass-nav,
+  .glass-inset {
+    background-image: none;
+    background-color: var(--glass-fallback);
+  }
 }
 
-/* Hero glow blobs — turquoise + violet on navy, violet + turquoise tint on light */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass-strong,
+  .glass-subtle,
+  .glass-nav,
+  .glass-inset {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-image: none;
+    background-color: var(--glass-fallback);
+  }
+}
+
+/* ——— Hero ————————————————————————————————————— */
+
+/* Soft product glows behind the headline; adapts to both themes. */
 .hero-glow {
-  background:
-    radial-gradient(560px 260px at 12% 8%, rgba(46, 242, 194, 0.16), transparent 65%),
-    radial-gradient(640px 300px at 88% 12%, rgba(97, 80, 234, 0.2), transparent 65%),
-    linear-gradient(180deg, #12183f 0%, #1a214f 100%);
+  background-image:
+    radial-gradient(58% 58% at 50% 0%, rgba(0, 113, 227, 0.16), transparent 70%),
+    radial-gradient(38% 42% at 86% 18%, rgba(191, 90, 242, 0.12), transparent 70%),
+    radial-gradient(36% 38% at 12% 24%, rgba(0, 199, 190, 0.1), transparent 70%);
 }
 
-:root .hero-glow {
-  background:
-    radial-gradient(560px 260px at 12% 8%, rgba(46, 242, 194, 0.22), transparent 65%),
-    radial-gradient(640px 300px at 88% 12%, rgba(97, 80, 234, 0.22), transparent 65%),
-    linear-gradient(180deg, #12183f 0%, #232c63 100%);
+.dark .hero-glow {
+  background-image:
+    radial-gradient(58% 58% at 50% 0%, rgba(10, 132, 255, 0.3), transparent 70%),
+    radial-gradient(38% 42% at 86% 18%, rgba(191, 90, 242, 0.2), transparent 70%),
+    radial-gradient(36% 38% at 12% 24%, rgba(0, 199, 190, 0.12), transparent 70%);
 }
 
 .text-gradient-brand {
-  background: linear-gradient(90deg, #2ef2c2 0%, #8b7cff 100%);
+  background: linear-gradient(115deg, #0071e3 0%, #6e5df6 48%, #00a6a6 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.dark .text-gradient-brand {
+  background: linear-gradient(115deg, #64b5ff 0%, #b79bff 48%, #2ef2c2 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Kept for legacy call sites; the glass utilities now own elevation. */
+.card-glow {
+  box-shadow: var(--glass-shadow);
 }
 
 /* Hadith text uses a Naskh face. The system UI fonts (Geist/Arial) have no
@@ -144,38 +379,22 @@ body {
     serif;
 }
 
-.card-glow {
-  box-shadow:
-    0 1px 0 rgba(97, 80, 234, 0.08),
-    0 12px 32px -16px rgba(97, 80, 234, 0.28);
-}
-
-.dark .card-glow {
-  box-shadow:
-    0 1px 0 rgba(46, 242, 194, 0.08),
-    0 12px 32px -16px rgba(46, 242, 194, 0.22);
-}
+/* ——— Motion ————————————————————————————————————— */
 
 /* New chat items rise into place (up → down) with a soft fade. */
 @keyframes chat-enter {
   from {
     opacity: 0;
-    transform: translateY(-12px);
+    transform: translateY(-12px) scale(0.995);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .chat-enter {
   animation: chat-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .chat-enter {
-    animation: none;
-  }
 }
 
 /* Ask page "heavy work" indicator — moving shimmer on the pipeline bar. */
@@ -192,7 +411,7 @@ body {
   background-image: linear-gradient(
     90deg,
     var(--primary) 0%,
-    color-mix(in oklab, var(--primary) 45%, var(--card)) 45%,
+    color-mix(in oklab, var(--primary) 40%, var(--card)) 45%,
     var(--primary) 100%
   );
   background-size: 200% 100%;
@@ -200,7 +419,35 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chat-enter,
   .thinking-shimmer {
     animation: none;
   }
+}
+
+/* ——— Chrome ————————————————————————————————————— */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--foreground) 22%, transparent) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklab, var(--foreground) 20%, transparent);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklab, var(--foreground) 32%, transparent);
 }

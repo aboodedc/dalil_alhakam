@@ -79,12 +79,13 @@
 - Example: `import { Button } from "@/components/ui/button"`
 
 ### Fonts
-- **Geist** (sans) and **Geist Mono** — loaded via `next/font/google`
-- CSS variables: `--font-geist-sans`, `--font-geist-mono`
-- **Readex Pro** (`--font-readex`) — Arabic-capable UI face (latin + arabic subsets)
+- **Thmanyah Sans** (`--font-thmanyah-sans`, exposed as `--font-display`) — local Saudi display face loaded with `next/font/local` from `public/fonts/thmanyah-sans-{Light,Regular,Medium,Bold,Black}.woff2`, mapped to weights 300/400/500/700/900. Applies ONLY to `h1`, `h2`, `h3` and the navbar brand title.
+- **IBM Plex Sans Arabic** (`--font-ibm-plex-arabic`, mapped to `--font-sans`) — default UI face for body copy, buttons, forms, navigation and every non-heading element.
+- **Geist Mono** (`--font-geist-mono`) — monospace only. Geist Sans is no longer loaded.
+- **Readex Pro** (`--font-readex`) — retained **only** for the PDF/image/Word export templates (`CSS_FONT_DISPLAY` in `app/ask/_components/export/fonts.ts`). It is no longer part of the live UI stack; do not remove it until the export templates migrate.
 - **Amiri** (`--font-amiri`) — Naskh face for hadith text; has the ﷺ ligature (U+FDFA)
 - **Noto Naskh Arabic** (`--font-noto-naskh`) — Naskh fallback; Amiri has **no** glyph for U+FD41 (﵁ رضي الله عنه), the honorific the corpus puts after every companion's name
-- The system UI fonts (Geist/Arial) have **no** glyph for U+FDFA/U+FD41 → they rendered as empty boxes. Use the `.font-naskh` utility class (`app/globals.css`) for every hadith text element.
+- The UI sans fonts (IBM Plex/Arial) have **no** glyph for U+FDFA/U+FD41 → use the `.font-naskh` utility class for every hadith text element. The global `h1/h2/h3` display rule has lower specificity than `.font-naskh`, so hadith text inside headings still renders Naskh.
 
 ### Client-side PDF/Word/Excel export (2026-11-12)
 - **Stack**: `html-to-image` (rasterises real HTML → PNG) + `pdf-lib` (A4 pages) + `docx` (Word) + `write-excel-file` (Excel, import from `write-excel-file/browser`).
@@ -190,11 +191,36 @@
 - **2026-11-14 — use `localhost`, not `127.0.0.1`, for dev UI checks**: opening `http://127.0.0.1:3000` makes Chrome's `/_next/hmr` WebSocket handshake fail (`ERR_INVALID_HTTP_RESPONSE`) → the page stays server-rendered and never hydrates (typing/clicking does nothing). `http://localhost:3000` works. Use `localhost` for browser E2E, or add `127.0.0.1` to `allowedDevOrigins`.
 - **2026-11-14 — production schema synced additively, zero data loss**: the remote DB still lacked the `20261109000000_diagram_alignment` objects (`SearchResult.summary`, `SourceRequest`, `PasswordResetToken`) because it was restored from `pg_dump` on 2026-10-06. First error seen: `The column 'summary of relation SearchResult' does not exist` from `prisma.searchQuery.create` in `/api/ask`. Tool: **`scripts/sync-db-schema.mjs`**. Safety model (treat it as production): `npm run db:sync` is a **read-only dry run** (everything rolled back); `npm run db:sync:apply` commits. The SQL is scanned and aborts on `DROP/TRUNCATE/DELETE/UPDATE/ALTER COLUMN/RENAME`; inside one transaction all tables are locked `EXCLUSIVE` and every row is fingerprinted (count + MD5 of original columns) before and after — any change auto-rolls back. Verified: **Book 2 · Hadith 2,656 · SearchQuery 49 · SearchResult 481 fingerprinted identical before/after**; `prisma migrate diff` against the live DB = `-- This is an empty migration.`; new objects accept writes (test rows rolled back). `_prisma_migrations` is still **absent** on prod → keep using `db:sync`/`db:sync:apply` for additive changes; re-run after pulling any migration that only adds objects/columns. Safe to re-run (idempotent). Note: the EXCLUSIVE lock briefly blocks writes (seconds) during the check.
 
-- **2026-11-14 — full logical backups (`npm run db:backup`)**: this machine has **no `pg_dump`/psql/Docker/WSL**, so `scripts/backup-db.mjs` builds a single self-contained `.sql` (catalog-derived DDL + `INSERT`s for every `public` table) with the `pg` driver inside a `REPEATABLE READ` snapshot. Each run **verifies itself** by replaying the dump into a throw-away `backup_verify_*` schema, comparing per-table row count + md5 (`row_to_json` ordered by `id`) with the source, then rolling the schema back. Output: `backups/dalil_alhakam_full_<timestamp>.sql` + `.manifest.json` + `.sql.sha256`; `/backups/` is **gitignored** (contains password hashes). Baseline 2026-11-14: **12 tables · 3,220 rows** (Book 2 · Hadith 2,656 · SearchQuery 56 · SearchResult 502 · Rating 2 · User 1 · Folder 1) · 22.4 MB · sha256 `59d952cc…`. Restore into an **empty** DB: `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>.sql` (one transaction, no drops). `ppg`/`pg_stat_statements`/`prisma_postgres` internals excluded.
+- **2026-11-14 — full logical backups (`npm run db:backup`)**: this machine has **no `pg_dump`/psql/Docker/WSL**, so `scripts/backup-db.mjs` builds a single self-contained `.sql` (catalog-derived DDL + chunked `INSERT`s for every `public` table) with the `pg` driver inside one `REPEATABLE READ` snapshot. Each run **verifies itself** by replaying the dump into a throw-away `backup_verify_*` schema (generated by the same builder, re-pointed at the scratch schema), comparing per-table row count + md5 (`row_to_json` ordered by `id`) with the snapshot, then rolling the schema back — a mismatch aborts before any file is published. Output: `backups/dalil_alhakam_full_<timestamp>.sql` + `.manifest.json` + `.sql.sha256`; `/backups/` is **gitignored** (contains password hashes). Baseline 2026-11-14: **12 tables · 3,220 rows** (Book 2 · Hadith 2,656 · SearchQuery 56 · SearchResult 502 · Rating 2 · User 1 · Folder 1) · 22.4 MB · sha256 `a0b7f69f…`. Restore into an **empty** DB: `psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f <file>.sql` (one transaction, no drops). `ppg`/`pg_stat_statements`/`prisma_postgres` internals excluded.
 
 ---
 
 ## 🎨 Design Decisions
+
+### Apple-style light-first theme + native liquid glass (2026-11-14)
+- **Context**: User asked to retheme the whole site with an Apple-like design and liquid-glass surfaces, optionally using `liquid-glass-react`.
+- **Decision**: implement the glass natively in CSS instead of adding `liquid-glass-react` — no new dependency, works with React 19/Tailwind v4, and degrades gracefully. The visual material is the same without a JS layer.
+- **Detail**:
+  - `app/globals.css` is the single source: Apple light-first tokens (`#f5f5f7` background / `#1d1d1f` graphite text, Apple blue `#0071e3` → `#0a84ff` in dark), ambient blue/purple/teal radial glows, large radii (26–30px) and pill controls.
+  - Glass utilities: `.glass`, `.glass-strong`, `.glass-subtle` (translucent gradient + `backdrop-filter: blur() saturate()` + inset specular rim), `.glass-inset` (recessed wells: composer, quote frames, tables), `.glass-nav` (floating sticky nav). Fallbacks: `@supports not (backdrop-filter…)` and `prefers-reduced-transparency` switch to near-solid `--glass-fallback`.
+  - `app/layout.tsx`: `THEME_INIT_SCRIPT` (`next/script` `beforeInteractive`) only adds `.dark` when `dalil-theme === "dark"`; default is light. Theme color `#f5f5f7` / `#000000`.
+  - `ThemeProvider`: state starts `"light"` (matches SSR), syncs from the pre-paint class after hydration, and only then applies/persists — gated on a `ready` state. Do **not** reintroduce the old `skipApply` ref pattern: StrictMode's double effect run applied the initial `"dark"` state and overwrote a saved light theme.
+  - Body theme transition is gated by `html.theme-ready` (added post-hydration) so a saved dark theme paints instantly instead of animating from light on reload.
+  - Header is a floating `max-w-7xl` glass pill: full nav at `lg` (1024px), hamburger sheet below; theme/language controls keep 44px targets.
+  - Export/print templates intentionally keep fixed ink colors — they must never inherit translucent glass tokens.
+  - `corpus-preview.tsx` hides empty edition/publisher badges instead of rendering blank pills (the Shamela corpus leaves those fields empty).
+- **Verified**: `npx tsc --noEmit` and `npx eslint app components` clean; light/dark screenshots of home + ask; theme persists across reloads and client navigation; no horizontal overflow at 360/390/768 across `/`, `/ask`, `/login`, `/register`, `/workspace`, `/manager`, `/sources`, `/report`.
+
+### Landing identity: Saudi display type, clean logo, covers & inline RAG flow (2026-11-14)
+- **Context**: User supplied the Thmanyah Sans font files, a transparent logo mark, two book covers, and asked for a «كيف يعمل؟» explainer. The explainer was later converted from an interactive dialog into an inline, always-visible flow.
+- **Typography**: Thmanyah Sans local display face (5 weights) for `h1/h2/h3` + brand; IBM Plex Sans Arabic for all other UI. Hadith text stays on `.font-naskh` (Amiri/Noto Naskh) and export templates stay on Readex Pro via an explicit `fontFamily: CSS_FONT_DISPLAY` on the PDF cover `h1`.
+- **Logo**: `public/dalil-logo.png` (transparent) is rendered bare in the header — no wrapper, border, background, shadow or padding frame; 40px on mobile / 44px on `sm+`; the link keeps `aria-label="Dalil Al-Ahkam home"`. The Ask empty state, AI answer avatar and thinking panel reuse the same mark; the legacy green `public/icon_web.png` remains only as the source for the generated favicon/PWA icons.
+- **Covers**: `app/_components/corpus-preview.tsx` maps exact DB titles (`المحرر في الحديث - ت القاسم` → `/books/al-muharrar.jpg`, `عمدة الأحكام الكبرى` → `/books/umdat-al-ahkam.jpg`). Cards show a 2:3 cover at the RTL start (64×96 mobile / 80×120 desktop), `object-cover`, rounded corners, shadow, hover lift + slight zoom; unknown titles get the neutral `BookOpen` fallback.
+- **How it works (inline)**: `app/_components/how-it-works.tsx` is a plain `<section id="how-it-works">`, not a dialog. It replaces the old `features-grid.tsx` (deleted) under «مصمم لمعايير البحث الشرعي». Four always-visible stages — your question → question understanding + semantic matching → indexed-book search + rerank → verified hadith with citation and page image — with numbered gradient icons, directional connectors and final result chips. Four columns at `lg+`; stacked vertical flow with down arrows below `lg`. Copy lives in `flow.*` keys (`flow.eyebrow/subtitle/aria/badge`, `flow.step.{1..4}.title/desc`, `flow.step.4.chip.*`, `flow.note`); the old `how.*` and unused `features.nl/cite/sanad/scan` keys are gone, `features.title` remains.
+- **Hero CTA**: «كيف يعمل؟» is a native `<a href="#how-it-works">`. `app/globals.css` sets `scroll-behavior: smooth` only under `prefers-reduced-motion: no-preference`, so reduced-motion users jump instantly. No modal, no pagination controls, no JS scroll handler.
+- **Accessibility**: the section is a labelled landmark (`aria-label` from `flow.aria`), the flow is an ordered list (`ol > li`), connectors and decorative numerals are `aria-hidden`, and the final chips are a labelled list. `components/ui/dialog.tsx` still wraps `DialogPrimitive.Title` / `DialogPrimitive.Description` for the remaining dialogs (details, tafsir, Shamela, export).
+- **Narrow header**: the login CTA switches to the short `nav.login.short` label below `sm` so the brand title does not truncate at 360px.
+- **Verified**: `npx tsc --noEmit` + `npx eslint app components lib/i18n/dictionaries.ts` clean; headless Chrome at 390/768/1024/1440 in AR/EN + light/dark; zero horizontal overflow; no `[role="dialog"]` after clicking the hero CTA; smooth scroll lands with the section top at 112px (header bottom 86px); covers at the RTL start; `.font-naskh` computed family remains Amiri on `/ask`.
 
 ### Sanad tree + document/image export (2026-11-12)
 - **Context**: The user asked for the sanad to be shown as a tree/graph, and for well-designed PDF / Word / Excel / image exports with selectable image templates for social sharing.
@@ -327,7 +353,7 @@
   - Workspace/history in localStorage (`lib/workspace.ts`); Google OAuth + TOTP are UI mocks
   - Verified: `npx tsc --noEmit` clean, `npm run lint` clean, `npm run build` passes (8 static routes)
 
-### Dark/Light Theme (2026-10-03)
+### Dark/Light Theme (2026-10-03 — tokens superseded 2026-11-14)
 - **Context**: User requested a dark + light theme toggle in the navbar, eye-friendly dark mode
 - **Detail**:
   - Tailwind v4 class-based dark mode via `@custom-variant dark (&:where(.dark, .dark *))` in `app/globals.css`
@@ -336,3 +362,4 @@
   - FOUC guard: `next/script` `beforeInteractive` inline script in `app/layout.tsx` (injected into `<head>` per Next docs — never a raw `<script>` in a component) + `suppressHydrationWarning`
   - Toggle button: `components/layout/theme-toggle.tsx` (Sun/Moon, 44px touch target, bilingual `theme.*` keys) rendered in `Header`
   - All hardcoded `stone-/emerald-/amber-/sky-/red-` utilities given `dark:` variants (ui primitives + pages)
+  - **Superseded (2026-11-14)**: palette, radii and surfaces were replaced by the Apple light-first theme + native liquid glass above; no `stone-/emerald-…` utilities remain in `app/` or `components/`. The persistence approach is still current, with the added `ready` gate.

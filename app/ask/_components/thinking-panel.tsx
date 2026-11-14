@@ -55,22 +55,24 @@ export function ThinkingPanel() {
         {t(locale, "ask.chat.thinking")} {t(locale, `ask.thinking.stage.${activeStage + 1}`)}
       </p>
 
-      <Image
-        src="/icon_web.png"
-        alt=""
-        aria-hidden
-        width={36}
-        height={36}
-        sizes="36px"
-        className="mt-1 h-9 w-9 shrink-0 rounded-xl object-contain"
-      />
+      <span className="glass-subtle mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] p-0.5">
+        <Image
+          src="/dalil-logo.png"
+          alt=""
+          aria-hidden
+          width={36}
+          height={36}
+          sizes="36px"
+          className="h-full w-full rounded-[10px] object-contain"
+        />
+      </span>
 
       <div
         aria-hidden="true"
-        className="min-w-0 flex-1 overflow-hidden rounded-2xl rounded-ss-md border border-border bg-card shadow-sm"
+        className="glass min-w-0 flex-1 overflow-hidden rounded-[26px]"
       >
         {/* Header: title, live timer, stage counter, progress */}
-        <div className="border-b border-border/70 bg-gradient-to-b from-primary/10 to-transparent px-3.5 py-3 sm:px-4">
+        <div className="border-b border-border/60 bg-gradient-to-b from-primary/10 to-transparent px-3.5 py-3.5 sm:px-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex min-w-0 items-center gap-2.5">
               <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/15 text-primary ring-1 ring-primary/25">
@@ -123,7 +125,7 @@ export function ThinkingPanel() {
                 <span
                   className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
                     done
-                      ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                      ? "bg-success/15 text-success"
                       : active
                         ? "bg-primary/15 text-primary"
                         : "bg-muted text-muted-foreground/50"
@@ -170,8 +172,8 @@ export function ThinkingPanel() {
           <div className="mb-1.5 flex items-center gap-1.5">
             <span className="flex gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-destructive/60" />
-              <span className="h-1.5 w-1.5 rounded-full bg-amber-500/70" />
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/60" />
+              <span className="h-1.5 w-1.5 rounded-full bg-warning/70" />
+              <span className="h-1.5 w-1.5 rounded-full bg-success/60" />
             </span>
             <span className="font-mono text-[9px] uppercase tracking-wider text-muted-foreground/70">
               {t(locale, "ask.thinking.log.title")}
@@ -201,8 +203,8 @@ export function ThinkingPanel() {
           </div>
         </div>
 
-        <p className="flex items-start gap-1.5 border-t border-border/70 px-3.5 py-2 text-[10.5px] leading-4 text-muted-foreground sm:px-4">
-          <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <p className="flex items-start gap-1.5 border-t border-border/60 px-3.5 py-2 text-[10.5px] leading-4 text-muted-foreground sm:px-4">
+          <ShieldCheck className="mt-0.5 h-3 w-3 shrink-0 text-success" />
           <span>{t(locale, "ask.thinking.note")}</span>
         </p>
       </div>

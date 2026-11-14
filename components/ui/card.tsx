@@ -4,14 +4,14 @@ import { cn } from "@/lib/utils";
 function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn("card-glow rounded-2xl border border-border bg-card text-card-foreground", className)}
+      className={cn("glass rounded-[26px] text-card-foreground", className)}
       {...props}
     />
   );
 }
 
 function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex flex-col gap-1.5 p-5 pb-3", className)} {...props} />;
+  return <div className={cn("flex flex-col gap-1.5 p-5 pb-3 sm:p-6 sm:pb-3", className)} {...props} />;
 }
 
 function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
@@ -23,11 +23,11 @@ function CardDescription({ className, ...props }: React.HTMLAttributes<HTMLParag
 }
 
 function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-5 pt-0", className)} {...props} />;
+  return <div className={cn("p-5 pt-0 sm:p-6 sm:pt-0", className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("flex items-center gap-2 p-5 pt-0", className)} {...props} />;
+  return <div className={cn("flex items-center gap-2 p-5 pt-0 sm:p-6 sm:pt-0", className)} {...props} />;
 }
 
 export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter };

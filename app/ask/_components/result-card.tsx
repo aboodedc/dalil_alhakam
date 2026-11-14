@@ -110,7 +110,7 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
           type="button"
           onClick={() => setShamelaOpen(true)}
           title={t(locale, "ask.shamela.open")}
-          className="group mt-1 flex w-full cursor-pointer flex-col gap-1.5 rounded-xl border border-border bg-card p-3 text-start transition-colors hover:border-primary/50 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="group glass-inset mt-1 flex w-full cursor-pointer flex-col gap-1.5 rounded-2xl p-3.5 text-start transition-all duration-200 hover:border-primary/40 hover:bg-primary/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           dir="rtl"
         >
           <span className="font-naskh text-[15px] leading-8 font-normal break-words text-foreground">
@@ -211,8 +211,8 @@ export function ResultCard({ result, rank, queryId }: ResultCardProps) {
                 className={cn(
                   "min-h-[44px] min-w-[36px] rounded p-1",
                   s <= rating
-                    ? "text-amber-500"
-                    : "text-muted-foreground/40 hover:text-amber-400"
+                    ? "text-[#ff9f0a]"
+                    : "text-muted-foreground/40 hover:text-[#ff9f0a]"
                 )}
                 aria-label={`${t(locale, "ask.rate")} ${s}/5`}
               >

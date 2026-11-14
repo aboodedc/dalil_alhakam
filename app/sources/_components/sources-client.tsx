@@ -169,7 +169,7 @@ export function SourcesClient() {
           <section className="flex flex-col gap-3">
             <h2 className="text-lg font-bold">{t(locale, "sources.list")}</h2>
             {requests.length === 0 ? (
-              <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+              <p className="glass-subtle rounded-2xl border-dashed p-4 text-sm text-muted-foreground">
                 {t(locale, "sources.empty")}
               </p>
             ) : (
@@ -177,7 +177,7 @@ export function SourcesClient() {
                 {requests.map((r) => (
                   <li
                     key={r.id}
-                    className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm"
+                    className="glass flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 text-sm"
                   >
                     <span className="font-medium">{r.title}</span>
                     {r.edition ? <span className="text-muted-foreground">· {r.edition}</span> : null}

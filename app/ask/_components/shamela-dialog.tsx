@@ -178,7 +178,7 @@ function ShamelaBody({ result }: { result: HadithResult }) {
           />
         </div>
       ) : (
-        <div className="flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-50 p-4 text-sm leading-7 text-amber-900 dark:border-amber-400/30 dark:bg-amber-500/10 dark:text-amber-100">
+        <div className="glass-subtle flex flex-col gap-3 rounded-2xl border-warning/35 p-4 text-sm leading-7 text-warning">
           <p className="flex items-start gap-2">
             <AlertCircle className="mt-1 h-4 w-4 shrink-0" aria-hidden />
             <span>{t(locale, "ask.shamela.fallback")}</span>

@@ -36,7 +36,7 @@ export function QueryForm({
         e.preventDefault();
         onSubmit();
       }}
-      className="card-glow rounded-2xl border border-border bg-card"
+      className="glass-strong rounded-[28px] transition-shadow duration-300 focus-within:shadow-[0_0_0_4px_rgba(0,113,227,0.12),0_28px_70px_-24px_rgba(0,0,0,0.35)]"
       dir="rtl"
     >
       <label htmlFor="chat-input" className="sr-only">
@@ -55,10 +55,10 @@ export function QueryForm({
         placeholder={t(locale, "ask.chat.ph")}
         rows={2}
         dir="auto"
-        className="max-h-[200px] min-h-[56px] w-full resize-y rounded-t-2xl bg-transparent px-4 pt-3 pb-1 text-[15px] leading-7 break-words placeholder:text-muted-foreground focus:outline-none"
+        className="max-h-[200px] min-h-[56px] w-full resize-y rounded-t-[28px] bg-transparent px-4 pt-3.5 pb-1 text-[15px] leading-7 break-words placeholder:text-muted-foreground focus:outline-none sm:px-5"
       />
-      <Separator />
-      <div className="flex items-center gap-2 px-3 py-2">
+      <Separator className="bg-border/60" />
+      <div className="flex items-center gap-2 px-3 py-2 sm:px-3.5">
         <label htmlFor="chat-scope" className="sr-only">
           {t(locale, "ask.scope")}
         </label>
@@ -66,7 +66,7 @@ export function QueryForm({
           id="chat-scope"
           value={scope}
           onChange={(e) => onScopeChange(e.target.value)}
-          className="h-11 w-auto max-w-[45%] truncate border-0 bg-transparent px-2 text-[13px] text-muted-foreground focus-visible:ring-0"
+          className="h-11 w-auto max-w-[45%] truncate border-0 bg-transparent px-2 text-[13px] text-muted-foreground shadow-none backdrop-blur-none focus-visible:ring-0"
         >
           <option value="all">{t(locale, "ask.scope.all")}</option>
           {books
@@ -85,7 +85,7 @@ export function QueryForm({
           size="icon"
           disabled={!canSend}
           aria-label={t(locale, "ask.chat.send")}
-          className="shrink-0 rounded-xl"
+          className="shrink-0"
         >
           <SendHorizontal className="h-4 w-4 rtl:rotate-180" />
         </Button>

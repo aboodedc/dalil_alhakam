@@ -132,7 +132,7 @@ export function SanadGraph({
             className="ms-auto h-8 gap-1.5 px-2 text-[11px]"
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-emerald-600" aria-hidden />
+              <Check className="h-3.5 w-3.5 text-success" aria-hidden />
             ) : (
               <Copy className="h-3.5 w-3.5" aria-hidden />
             )}
@@ -144,7 +144,7 @@ export function SanadGraph({
       </div>
 
       {resolved.source === "ai" ? (
-        <p className="flex items-start gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] leading-5 text-amber-900 dark:text-amber-100">
+        <p className="flex items-start gap-1.5 rounded-xl border border-warning/30 bg-warning/10 px-3 py-2 text-[11px] leading-5 text-warning">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
           {t(locale, "ask.sanad.graph.ai.note")}
         </p>

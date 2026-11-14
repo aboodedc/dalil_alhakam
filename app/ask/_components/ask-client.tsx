@@ -112,9 +112,9 @@ export function AskClient() {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6">
-      <div className="flex items-center gap-3 py-5">
+      <div className="flex items-center gap-3 pt-7 pb-5">
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
+          <h1 className="truncate text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
             {t(locale, "ask.chat.title")}
           </h1>
           {activeSources > 0 ? (
@@ -133,21 +133,21 @@ export function AskClient() {
 
       <div className="flex flex-1 flex-col gap-6 pb-6" aria-live="polite">
         {empty ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-5 py-10 text-center sm:py-16">
-            <Image
-              src="/icon_web.png"
-              alt=""
-              aria-hidden
-              width={112}
-              height={112}
-              sizes="(max-width: 640px) 96px, 112px"
-              className="h-24 w-24 rounded-2xl object-contain shadow-lg sm:h-28 sm:w-28"
-            />
-            <div className="flex max-w-xl flex-col gap-2">
-              <p className="text-xl font-bold leading-8 sm:text-2xl sm:leading-9">
-                {t(locale, "ask.chat.subtitle")}
-              </p>
-            </div>
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 py-10 text-center sm:py-16">
+            <span className="glass flex h-24 w-24 items-center justify-center rounded-[30px] p-2 sm:h-28 sm:w-28">
+              <Image
+                src="/dalil-logo.png"
+                alt=""
+                aria-hidden
+                width={112}
+                height={112}
+                sizes="(max-width: 640px) 96px, 112px"
+                className="h-full w-full rounded-[24px] object-contain"
+              />
+            </span>
+            <p className="max-w-xl text-balance text-2xl font-semibold leading-9 tracking-[-0.03em] sm:text-3xl sm:leading-10">
+              {t(locale, "ask.chat.subtitle")}
+            </p>
             <ClarificationBanner onPick={(s) => submit(s)} />
           </div>
         ) : (
@@ -158,7 +158,7 @@ export function AskClient() {
         <div ref={bottomRef} />
       </div>
 
-      <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-background via-background to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
+      <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-background via-background/85 to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
         <QueryForm
           value={input}
           scope={scope}

@@ -76,11 +76,15 @@ export function ManagerClient() {
         </Card>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2" role="tablist" aria-label={t(locale, "manager.title")}>
+          <div
+            className="glass inline-flex w-fit max-w-full flex-wrap gap-1 rounded-full p-1"
+            role="tablist"
+            aria-label={t(locale, "manager.title")}
+          >
             <Button
               type="button"
               size="sm"
-              variant={tab === "books" ? "default" : "outline"}
+              variant={tab === "books" ? "default" : "ghost"}
               onClick={() => setTab("books")}
               role="tab"
               aria-selected={tab === "books"}
@@ -90,7 +94,7 @@ export function ManagerClient() {
             <Button
               type="button"
               size="sm"
-              variant={tab === "reports" ? "default" : "outline"}
+              variant={tab === "reports" ? "default" : "ghost"}
               onClick={() => setTab("reports")}
               role="tab"
               aria-selected={tab === "reports"}
@@ -101,7 +105,7 @@ export function ManagerClient() {
               <Button
                 type="button"
                 size="sm"
-                variant={tab === "accounts" ? "default" : "outline"}
+                variant={tab === "accounts" ? "default" : "ghost"}
                 onClick={() => setTab("accounts")}
                 role="tab"
                 aria-selected={tab === "accounts"}
@@ -112,7 +116,7 @@ export function ManagerClient() {
             <Button
               type="button"
               size="sm"
-              variant={tab === "requests" ? "default" : "outline"}
+              variant={tab === "requests" ? "default" : "ghost"}
               onClick={() => setTab("requests")}
               role="tab"
               aria-selected={tab === "requests"}

@@ -55,6 +55,11 @@ backups/dalil_alhakam_full_<YYYYMMDD_HHmmss>.sql.sha256    # checksum of the dum
 Baseline (2026-11-14): 12 tables · 3,220 rows · 22.4 MB
 (`Book` 2 · `Hadith` 2,656 · `SearchQuery` 56 · `SearchResult` 502 · `Rating` 2 · `User` 1 · `Folder` 1).
 
+Latest verified run (2026-11-14 19:08 local): `dalil_alhakam_full_20261114_190859.sql`
+· 22.4 MB · sha256 `a0b7f69f…4fe70b` · scratch-schema replay matched every table.
+Per-table `md5` in the manifest = md5 over `row_to_json(row)` ordered by `id`, so
+any client can re-compute it.
+
 ## The retrieval pipeline (MVP — all-remote via OpenRouter, Vercel-ready)
 
 ```

@@ -121,7 +121,7 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
       <div className="flex justify-start">
         <p
           dir="auto"
-          className="chat-enter max-w-[90%] rounded-2xl rounded-ss-md bg-primary px-4 py-3 text-[15px] leading-7 break-words whitespace-pre-wrap text-primary-foreground sm:max-w-[80%]"
+          className="chat-enter max-w-[90%] rounded-[24px] rounded-ss-lg bg-gradient-to-br from-[#0071e3] to-[#0059b3] px-4 py-3 text-[15px] leading-7 break-words whitespace-pre-wrap text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_30px_-14px_rgba(0,113,227,0.7)] sm:max-w-[80%]"
         >
           {turn.question}
         </p>
@@ -145,15 +145,17 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
         </Alert>
       ) : (
         <div className="flex min-w-0 items-start gap-3">
-          <Image
-            src="/icon_web.png"
-            alt=""
-            aria-hidden
-            width={36}
-            height={36}
-            sizes="36px"
-            className="mt-1 h-9 w-9 shrink-0 rounded-xl object-contain"
-          />
+          <span className="glass-subtle mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] p-0.5">
+            <Image
+              src="/dalil-logo.png"
+              alt=""
+              aria-hidden
+              width={36}
+              height={36}
+              sizes="36px"
+              className="h-full w-full rounded-[10px] object-contain"
+            />
+          </span>
           <div className="flex min-w-0 flex-1 flex-col gap-3">
             {turn.answer ? (
               <Card data-scroll-target="" className="chat-enter">
@@ -221,7 +223,7 @@ export function ChatMessage({ turn, onRetry }: ChatMessageProps) {
                 </p>
               </section>
             ) : turn.answer ? null : (
-              <Card className="chat-enter border-dashed" data-scroll-target="">
+              <Card className="chat-enter border-dashed border-border" data-scroll-target="">
                 <CardContent className="p-4 text-center text-sm leading-7 text-muted-foreground">
                   {t(locale, "ask.chat.empty.hint")}
                 </CardContent>

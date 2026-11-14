@@ -379,6 +379,7 @@ export function PdfCoverPage({
           <h1
             style={{
               margin: "10px 0 0",
+              fontFamily: CSS_FONT_DISPLAY,
               fontSize: 34,
               lineHeight: 1.35,
               fontWeight: 700,

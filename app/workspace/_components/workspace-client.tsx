@@ -115,7 +115,7 @@ export function WorkspaceClient() {
                     const text = saved?.text ?? h?.text;
                     const number = saved?.hadithNumber ?? h?.hadithNumber;
                     return (
-                      <p key={id} className="rounded-xl bg-muted p-2 text-sm leading-6" dir="rtl">
+                      <p key={id} className="glass-inset rounded-xl p-2.5 text-sm leading-6" dir="rtl">
                         {text
                           ? `${text.slice(0, 90)}…${number ? ` · #${number}` : ""}`
                           : ar
@@ -138,7 +138,7 @@ export function WorkspaceClient() {
         ) : (
           <ul className="flex flex-col gap-2">
             {history.map((h) => (
-              <li key={h.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3 text-sm">
+              <li key={h.id} className="glass flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3 text-sm">
                 <span className="font-medium">{h.query}</span>
                 <span className="text-muted-foreground">· {h.resultCount} · {new Date(h.createdAt).toLocaleString()}</span>
                 <Link href="/ask" className="ms-auto font-medium text-primary underline underline-offset-4">

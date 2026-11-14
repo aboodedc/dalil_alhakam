@@ -10,7 +10,7 @@
 | :----- | :---: |
 | 📋 TODO | 0 |
 | 🔄 IN_PROGRESS | 0 |
-| ✅ DONE | 32 |
+| ✅ DONE | 34 |
 | 🚫 BLOCKED | 0 |
 | 👀 REVIEW | 0 |
 
@@ -153,6 +153,34 @@
     - **Second follow-up**: the batch export now carries the **question + the answer + every hadith** (PDF: cover → خلاصة البحث page → one page per hadith; Word: question → خلاصة البحث → cards; Excel: question + summary in the info sheet). Added **4 more templates that change the design, not just the colours** (`telegram` channel band, `newspaper` masthead, `mosaic` geometric tile, `spotlight` poster) and a **horizontal 1440×900** size with a frameless layout and a single accent rule.
     - **Third follow-up**: the sanad in the exported PDF is a node-link tree (`SanadGraph`) — Prophet ﷺ root, central spine, numbered narrator cards alternating right/left, source note and overflow chip — instead of a plain row of pills. The Word export keeps the linked-chip chain.
     - **Verified**: `npx tsc --noEmit`, `npm run lint`, `npm run build` clean; browser-driven end-to-end check (`scripts/check-exports.mjs`) produces a 1080×1350 PNG, a 3-card ZIP, a 5-page A4 PDF, valid .docx (hadiths + summary) and .xlsx; all 32 template × size combinations render; mobile 390px and desktop EN/AR verified with no horizontal overflow.
+
+- [x] ✅ **TASK-033**: Whole-site Apple-style redesign + native liquid-glass surfaces
+  - **Priority**: High
+  - **Category**: UI
+  - **Created**: 2026-11-14
+  - **Completed**: 2026-11-14
+  - **Notes**:
+    - Apple light-first design system in `app/globals.css`: `#f5f5f7` / `#1d1d1f` tokens, Apple blue `#0071e3` (light) / `#0a84ff` (dark), blue/purple/teal ambient glows, 26–30px radii and pill controls
+    - Liquid glass implemented natively (`.glass`, `.glass-strong`, `.glass-subtle`, `.glass-inset`, `.glass-nav`) with `backdrop-filter` blur + saturation, translucent gradients and inset specular rims; near-solid fallbacks for unsupported browsers and `prefers-reduced-transparency`; no `liquid-glass-react` dependency
+    - Rethemed shell (floating glass header, footer, auth layout, error/not-found), home (hero/features/corpus), Ask (empty state, composer, chat bubbles, result cards, thinking panel, dialogs), manager/workspace/sources/report surfaces and all UI primitives
+    - Theme: light is the default; `dalil-theme` persists and the blocking script pre-paints saved dark. Fixed a StrictMode persistence bug where the initial `"dark"` state overwrote a saved light theme; gated theme transitions behind `html.theme-ready` to remove the dark-reload flash
+    - Corpus section now shows the subtitle below the heading (not as an uppercase eyebrow) and hides empty edition/publisher badges
+    - Verified: `npx tsc --noEmit`, `npx eslint app components` clean; light/dark home + ask screenshots; no horizontal overflow at 360/390/768 on all main routes; print/export templates untouched
+
+- [x] ✅ **TASK-034**: Landing identity — Thmanyah Sans + IBM Plex typography, clean logo, book covers, inline «كيف يعمل؟» flow
+  - **Priority**: High
+  - **Category**: UI
+  - **Created**: 2026-11-14
+  - **Completed**: 2026-11-14
+  - **Notes**:
+    - Typography: local Thmanyah Sans (`public/fonts/`, `next/font/local`, weights 300/400/500/700/900) for `h1/h2/h3` + navbar brand; IBM Plex Sans Arabic (`next/font/google`) becomes the default UI face. Readex Pro kept only for export templates; `.font-naskh` untouched.
+    - Navbar logo replaced with the transparent `public/dalil-logo.png`, rendered directly with no wrapper/background/border/shadow (40px mobile, 44px desktop). The Ask empty state, chat answer avatar and thinking panel use the same blue mark instead of the legacy green `icon_web.png`.
+    - Corpus cards: real covers mapped by exact DB title to `public/books/al-muharrar.jpg` and `umdat-al-ahkam.jpg`; 2:3 cover at the RTL start with rounded corners, shadow, hover lift/zoom, neutral fallback for future books; skeleton updated to match.
+    - `app/_components/how-it-works.tsx` is now an inline `<section id="how-it-works">` replacing the old three feature cards (`features-grid.tsx` deleted). Four connected stages from user question to cited result, responsive (4 columns at `lg+`, vertical stack with down arrows below), final citation chips, and an explicit retrieval-only/no-hallucination note. Copy uses new `flow.*` dictionary keys.
+    - «كيف يعمل؟» in the hero is a native anchor to `#how-it-works`; smooth scrolling lives in `globals.css` behind `prefers-reduced-motion: no-preference`. The old Radix explainer dialog, progress, and prev/next controls are removed.
+    - `components/ui/dialog.tsx` keeps `DialogPrimitive.Title`/`Description` wrappers so the remaining dialogs stay properly named for screen readers.
+    - Mobile header: short login label below `sm` prevents brand truncation at 360px.
+    - Verified: `npx tsc --noEmit`, `npx eslint app components lib/i18n/dictionaries.ts` clean; headless Chrome at 390/768/1024/1440, AR/EN, light/dark — no horizontal overflow, no dialog after the hero click, smooth scroll lands at the 112px offset; `/ask` `.font-naskh` computes to Amiri.
 
 ### ⚙️ Features
 

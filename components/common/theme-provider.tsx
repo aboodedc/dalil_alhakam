@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 type Theme = "light" | "dark";
 
@@ -10,8 +10,10 @@ interface ThemeCtx {
   setTheme: (t: Theme) => void;
 }
 
+const STORAGE_KEY = "dalil-theme";
+
 const ThemeContext = createContext<ThemeCtx>({
-  theme: "dark",
+  theme: "light",
   toggle: () => {},
   setTheme: () => {},
 });
@@ -23,32 +25,33 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  // Start at "dark" (Participant Guide theme is dark-first). The blocking
-  // script in the root layout already set the correct class pre-paint; state
-  // syncs back from the DOM after hydration — no mismatch.
-  const [theme, setThemeState] = useState<Theme>("dark");
-  const skipApply = useRef(true);
-
-  // Reflect state changes in the DOM (skipped on mount: the blocking script
-  // in the root layout already set the correct class before first paint).
-  useEffect(() => {
-    if (skipApply.current) {
-      skipApply.current = false;
-      return;
-    }
-    applyTheme(theme);
-    try {
-      window.localStorage.setItem("dalil-theme", theme);
-    } catch {
-      // Private browsing — theme just won't persist.
-    }
-  }, [theme]);
+  // Light-first: state matches the server HTML default. The blocking script in
+  // the root layout may already have switched the DOM to dark; after hydration
+  // we copy that authoritative value into state before applying/persisting.
+  const [theme, setThemeState] = useState<Theme>("light");
+  const [ready, setReady] = useState(false);
 
   // After hydration, sync state with the class set pre-paint.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional post-hydration sync with the pre-paint DOM class; reading it during render would cause a hydration mismatch
     setThemeState(document.documentElement.classList.contains("dark") ? "dark" : "light");
+    setReady(true);
   }, []);
+
+  // Reflect state changes in the DOM and persist. Gated on `ready` so the
+  // pre-paint value is never overwritten — including StrictMode's double
+  // effect run, which previously clobbered a saved light theme with "dark".
+  useEffect(() => {
+    if (!ready) return;
+    // Enable theme transitions only after hydration (see globals.css).
+    document.documentElement.classList.add("theme-ready");
+    applyTheme(theme);
+    try {
+      window.localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      // Private browsing — theme just won't persist.
+    }
+  }, [ready, theme]);
 
   const setTheme = useCallback((t: Theme) => setThemeState(t), []);
   const toggle = useCallback(() => setThemeState((p) => (p === "dark" ? "light" : "dark")), []);
